@@ -155,6 +155,7 @@ setInterval(() => {
   const showcase = $('#showcase');
   if (state.loading || state.showcasePaused || reducedMotion.matches || document.hidden ||
       ['#admin', '#collection', '#cart'].includes(window.location.hash) || dialog.open || detailDialog.open ||
-      showcase.matches(':hover') || showcase.contains(document.activeElement)) return;
+      showcase.matches(':hover') || showcase.contains(document.activeElement) ||
+      $('#showcase-stage').classList.contains('is-dragging')) return;
   advanceShowcase(1);
 }, SHOWCASE_INTERVAL);

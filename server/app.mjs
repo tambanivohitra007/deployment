@@ -127,9 +127,9 @@ export function createApplication(config = {}) {
         }
         if (path === '/api/auth/login' && method === 'POST') {
           rateLimit(`login:${ip}`, 10, 15 * 60000);
-          if (activeLogins >= 2) throw new HttpError(429, 'Sign-in is busy. Please try again shortly.');
           const body = await readJson(req);
           if (typeof body?.email !== 'string' || body.email.length > 254 || typeof body.password !== 'string' || body.password.length > 128) throw new HttpError(400, 'Invalid sign-in details.');
+          if (activeLogins >= 2) throw new HttpError(429, 'Sign-in is busy. Please try again shortly.');
           const admin = db.prepare('SELECT * FROM admins WHERE email = ?').get(body.email.trim().toLowerCase());
           activeLogins++;
           let valid;

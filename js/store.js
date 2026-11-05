@@ -13,6 +13,42 @@ function showcaseProducts() {
   );
 }
 
+// How many products are visible on each side of the centre of the wave.
+const WAVE_RADIUS = 3;
+const WAVE_LINE = `<svg class="wave-line" viewBox="0 0 1600 90" preserveAspectRatio="none" aria-hidden="true"><path d="M0 45 Q100 5 200 45 T400 45 T600 45 T800 45 T1000 45 T1200 45 T1400 45 T1600 45" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
+
+// Sizes depend on the stage, so they are measured each time the wave moves.
+function waveMetrics(stage) {
+  const narrow = stage.clientWidth < 640;
+  return { spacing: stage.clientWidth * (narrow ? 0.4 : 0.22), amplitude: stage.clientHeight * 0.08 };
+}
+
+// Place one item on the wave. Offsets can be fractional while the user drags.
+function placeWaveItem(node, offset, metrics, radius) {
+  const distance = Math.abs(offset);
+  const x = offset * metrics.spacing;
+  // The wave rises on the left, away from the campaign copy in the top right.
+  const y = Math.sin(offset * Math.PI / 2) * metrics.amplitude;
+  // Tilt side items to follow the slope of the wave; the centre stays upright.
+  const tilt = 8 * Math.cos(offset * Math.PI / 2) * Math.min(distance, 1);
+  const scale = 1 - Math.min(distance, radius + 1) * 0.17;
+  node.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${tilt}deg) scale(${scale})`;
+  node.style.opacity = distance > radius + 0.5 ? '0' : String(Math.max(0, 1 - distance * 0.26));
+  node.style.zIndex = String(100 - Math.round(distance * 10));
+  // Farther items start later, so each move ripples outward like a wave.
+  node.style.transitionDelay = `${Math.round(Math.min(distance, radius) * 40)}ms`;
+}
+
+function positionWave(shift = 0) {
+  const stage = $('#showcase-stage');
+  const track = stage.querySelector('.wave-track');
+  if (!track) return;
+  const metrics = waveMetrics(stage);
+  for (const node of track.children) {
+    if (!node.dataset.leaving) placeWaveItem(node, node.waveOffset + shift, metrics, track.waveRadius);
+  }
+}
+
 export function renderShowcase() {
   const products = showcaseProducts();
   const stage = $('#showcase-stage');
@@ -33,14 +69,80 @@ export function renderShowcase() {
   state.showcaseIndex %= products.length;
   const current = products[state.showcaseIndex];
   const imageFor = (product) => product.thumbnail && /^https?:\/\//i.test(product.thumbnail)
-    ? `<img src="${escapeHtml(product.thumbnail)}" alt="">`
+    ? `<img src="${escapeHtml(product.thumbnail)}" alt="" draggable="false">`
     : '<span class="showcase-placeholder" aria-hidden="true">◇</span>';
-  const before = products[(state.showcaseIndex - 1 + products.length) % products.length];
-  const after = products[(state.showcaseIndex + 1) % products.length];
-  stage.innerHTML = `
-    <div class="showcase-item showcase-side" aria-hidden="true">${products.length > 1 ? imageFor(before) : ''}</div>
-    <button type="button" class="showcase-item showcase-main" data-store-id="${escapeHtml(current.id)}" aria-label="View details for ${escapeHtml(current.title)}">${imageFor(current)}</button>
-    <div class="showcase-item showcase-side" aria-hidden="true">${products.length > 2 ? imageFor(after) : ''}</div>`;
+
+  let track = stage.querySelector('.wave-track');
+  if (!track) {
+    stage.innerHTML = `${WAVE_LINE}<div class="wave-track"></div>`;
+    track = stage.querySelector('.wave-track');
+  }
+  const hadFocus = stage.contains(document.activeElement);
+  const count = products.length;
+  const radius = Math.min(WAVE_RADIUS, Math.floor((count - 1) / 2));
+  track.waveRadius = radius;
+  const wanted = new Map();
+  for (let offset = -radius; offset <= radius; offset++) {
+    const product = products[(state.showcaseIndex + offset + count) % count];
+    wanted.set(String(product.id), { product, offset });
+  }
+
+  // Keep existing items so they can glide to their new place instead of being redrawn.
+  const metrics = waveMetrics(stage);
+  const nodes = new Map();
+  for (const node of [...track.children]) {
+    if (node.dataset.leaving) continue;
+    if (wanted.has(node.dataset.productId)) {
+      nodes.set(node.dataset.productId, node);
+      continue;
+    }
+    node.dataset.leaving = 'true';
+    node.tabIndex = -1;
+    placeWaveItem(node, Math.sign(node.waveOffset) * (radius + 1), metrics, radius);
+    setTimeout(() => node.remove(), 900);
+  }
+
+  let added = false;
+  for (const [id, { product, offset }] of wanted) {
+    let node = nodes.get(id);
+    if (!node) {
+      node = document.createElement('button');
+      node.type = 'button';
+      node.className = 'wave-item';
+      node.dataset.productId = id;
+      // New items enter from just beyond the edge they appear on.
+      node.waveOffset = offset + (offset < 0 ? -1 : 1);
+      track.append(node);
+      placeWaveItem(node, node.waveOffset, metrics, radius);
+      node.style.opacity = '0';
+      nodes.set(id, node);
+      added = true;
+    }
+    if (node.imageSource !== product.thumbnail) {
+      node.innerHTML = imageFor(product);
+      node.imageSource = product.thumbnail;
+    }
+    node.waveOffset = offset;
+    // Only the centre product opens details; side items move the wave instead.
+    if (offset === 0) {
+      node.dataset.storeId = id;
+      delete node.dataset.waveStep;
+      node.setAttribute('aria-label', `View details for ${product.title}`);
+      node.removeAttribute('aria-hidden');
+      node.tabIndex = 0;
+    } else {
+      delete node.dataset.storeId;
+      node.dataset.waveStep = String(offset);
+      node.removeAttribute('aria-label');
+      node.setAttribute('aria-hidden', 'true');
+      node.tabIndex = -1;
+    }
+  }
+  // Apply the starting positions of new items before animating them in.
+  if (added) void track.offsetWidth;
+  positionWave();
+  if (hadFocus) nodes.get(String(current.id))?.focus({ preventScroll: true });
+
   const price = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(current.price) || 0);
   $('#showcase-caption').innerHTML = `<span class="campaign-kicker">${escapeHtml((current.category || 'Featured product').replace(/-/g, ' '))} · ${state.showcaseIndex + 1} / ${products.length}</span><p>${escapeHtml(current.title)}</p><span>${price}</span>`;
 }
@@ -48,7 +150,7 @@ export function renderShowcase() {
 export function advanceShowcase(direction) {
   const count = state.products.length;
   if (count < 2) return;
-  state.showcaseIndex = (state.showcaseIndex + direction + count) % count;
+  state.showcaseIndex = ((state.showcaseIndex + direction) % count + count) % count;
   renderShowcase();
 }
 
@@ -204,6 +306,74 @@ $('#showcase-toggle').addEventListener('click', () => {
   renderShowcase();
 });
 reducedMotion.addEventListener('change', renderShowcase);
+
+// Swipe or drag the wave. The pointer is captured only once the user clearly
+// moves sideways, so taps still open details and vertical scrolling still works.
+const showcaseStage = $('#showcase-stage');
+let drag = null;
+let suppressClick = false;
+showcaseStage.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0 || state.products.length < 2 || !showcaseStage.querySelector('.wave-item')) return;
+  drag = { id: event.pointerId, startX: event.clientX, startY: event.clientY, x: event.clientX, time: event.timeStamp, velocity: 0, moved: false };
+});
+showcaseStage.addEventListener('pointermove', (event) => {
+  if (!drag || event.pointerId !== drag.id) return;
+  const dx = event.clientX - drag.startX;
+  if (!drag.moved) {
+    if (Math.abs(dx) < 8) return;
+    if (Math.abs(event.clientY - drag.startY) > Math.abs(dx)) {
+      drag = null;
+      return;
+    }
+    drag.moved = true;
+    showcaseStage.setPointerCapture(event.pointerId);
+    showcaseStage.classList.add('is-dragging');
+  }
+  drag.velocity = (event.clientX - drag.x) / Math.max(1, event.timeStamp - drag.time);
+  drag.x = event.clientX;
+  drag.time = event.timeStamp;
+  const radius = showcaseStage.querySelector('.wave-track').waveRadius;
+  const shift = dx / waveMetrics(showcaseStage).spacing;
+  positionWave(Math.max(-radius, Math.min(radius, shift)));
+});
+function endDrag(event) {
+  if (!drag || event.pointerId !== drag.id) return;
+  const finished = drag;
+  drag = null;
+  if (!finished.moved) return;
+  showcaseStage.classList.remove('is-dragging');
+  // The click that follows a drag should not open product details.
+  suppressClick = true;
+  setTimeout(() => { suppressClick = false; }, 0);
+  let steps = 0;
+  if (event.type === 'pointerup') {
+    steps = Math.round(-(event.clientX - finished.startX) / waveMetrics(showcaseStage).spacing);
+    // A quick flick moves one product even if the distance was short.
+    if (!steps && Math.abs(finished.velocity) > 0.35) steps = finished.velocity < 0 ? 1 : -1;
+  }
+  if (steps) advanceShowcase(steps);
+  else positionWave();
+}
+showcaseStage.addEventListener('pointerup', endDrag);
+showcaseStage.addEventListener('pointercancel', endDrag);
+showcaseStage.addEventListener('click', (event) => {
+  if (suppressClick) {
+    event.stopImmediatePropagation();
+    return;
+  }
+  const side = event.target.closest('[data-wave-step]');
+  if (!side) return;
+  // Stop here so the item that just moved to the centre does not also open.
+  event.stopImmediatePropagation();
+  advanceShowcase(Number(side.dataset.waveStep));
+}, true);
+$('#showcase').addEventListener('keydown', (event) => {
+  if (event.key === 'ArrowLeft') advanceShowcase(-1);
+  else if (event.key === 'ArrowRight') advanceShowcase(1);
+  else return;
+  event.preventDefault();
+});
+new ResizeObserver(() => positionWave()).observe(showcaseStage);
 $('#store-search').addEventListener('input', (event) => {
   state.storeQuery = event.target.value;
   state.storePage = 1;
