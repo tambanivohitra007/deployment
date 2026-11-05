@@ -101,6 +101,7 @@
       <nav class="admin-sidebar-nav" aria-label="Admin navigation">
         <a class="admin-nav-current" href="#admin" aria-current="page"><span aria-hidden="true">&#9638;</span> Overview</a>
         <button id="inventory-link" type="button"><span aria-hidden="true">&#9636;</span> Products</button>
+        <button id="orders-link" type="button"><span aria-hidden="true">&#9776;</span> Orders</button>
         <a href="#collection"><span aria-hidden="true">&#9635;</span> Collection</a>
         <a href="#store"><span aria-hidden="true">&#8599;</span> View storefront</a>
       </nav>
@@ -128,6 +129,11 @@
       <div class="overflow-x-auto"><table class="w-full min-w-[700px] text-left text-sm"><thead class="bg-slate-50/80 text-xs uppercase tracking-wider text-slate-400"><tr><th scope="col" class="px-5 py-4 font-semibold">Product</th><th scope="col" class="px-5 py-4 font-semibold">Category</th><th scope="col" class="px-5 py-4 font-semibold">Price</th><th scope="col" class="px-5 py-4 font-semibold">Stock</th><th scope="col" class="px-5 py-4 text-right font-semibold">Actions</th></tr></thead><tbody id="product-list" class="divide-y divide-slate-100"></tbody></table></div>
       <div id="status" role="status" class="is-loading px-5 py-12 text-center text-sm text-slate-500">Loading products...</div>
       <div class="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 px-5 py-4 text-sm text-slate-500"><span id="page-info">Loading catalog...</span><div class="flex gap-2"><button id="previous" type="button" class="rounded-lg border border-slate-200 px-3 py-2 font-semibold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">Previous</button><button id="next" type="button" class="rounded-lg border border-slate-200 px-3 py-2 font-semibold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">Next</button></div></div>
+    </section>
+    <section id="orders-section" tabindex="-1" aria-labelledby="orders-title" class="admin-orders">
+      <div class="orders-heading"><div><p class="admin-kicker">SALES ACTIVITY</p><h2 id="orders-title">Demo orders <span id="orders-count" class="orders-count">0</span></h2><p>Review orders and update their demo status.</p></div><span class="orders-demo-label">This tab only</span></div>
+      <p class="orders-notice">Demo only: no payment, order, or delivery is processed. Status changes are for demonstration and do not trigger fulfillment.</p>
+      <div id="orders-list" class="orders-list"><p class="orders-empty">No demo orders yet. Orders placed in the storefront will appear here.</p></div>
     </section>
     <p class="admin-footer">Stockroom &middot; Demo catalog powered by <a href="https://dummyjson.com/docs/products" target="_blank" rel="noopener noreferrer">DummyJSON</a></p>
     </div>

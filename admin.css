@@ -46,6 +46,29 @@
 .category-count { color: #4d6254; font-weight: 700; text-align: right; }
 .admin-table { margin-top: 20px; scroll-margin-top: 20px; }
 .admin-table:focus { outline: none; }
+.admin-orders { margin-top: 20px; padding: 24px; border: 1px solid #e8eeea; border-radius: 14px; background: #fff; scroll-margin-top: 20px; }
+.admin-orders:focus { outline: none; }
+.orders-heading { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 15px; }
+.orders-heading h2 { margin-top: 8px; color: #26372c; font-size: 18px; font-weight: 800; }
+.orders-heading h2 + p { margin-top: 6px; color: #8a9990; font-size: 12px; }
+.orders-count { display: inline-block; margin-left: 4px; padding: 3px 8px; border-radius: 20px; background: #eaf5ed; color: #347b4b; font-size: 11px; vertical-align: middle; }
+.orders-demo-label { padding: 6px 10px; border: 1px solid #dbeae0; border-radius: 20px; color: #63816c; font-size: 11px; font-weight: 700; }
+.orders-notice { margin-top: 20px; color: #8a806e; font-size: 11px; line-height: 1.6; }
+.orders-list { margin-top: 18px; border-top: 1px solid #edf1ee; }
+.orders-empty { padding: 35px 0 12px; color: #91a097; font-size: 13px; text-align: center; }
+.order-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 20px; padding: 20px 0; border-bottom: 1px solid #edf1ee; }
+.order-card-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 14px; }
+.order-card-heading strong { color: #26372c; font-size: 13px; }
+.order-card-heading time, .order-card-meta { color: #8d9c92; font-size: 11px; }
+.order-card-meta { margin-top: 6px; }
+.order-card-total { color: #26372c; font-family: Manrope, sans-serif; font-size: 15px; font-weight: 800; text-align: right; }
+.order-status { display: block; width: 100%; min-width: 120px; margin-top: 8px; padding: 7px 9px; border: 1px solid #dce8df; border-radius: 8px; background: #f5faf6; color: #4c7457; font-size: 11px; }
+.order-status:focus-visible { outline: 2px solid #4e9864; outline-offset: 2px; }
+.order-details { grid-column: 1 / -1; color: #627469; font-size: 12px; }
+.order-details summary { width: fit-content; cursor: pointer; color: #36734a; font-weight: 700; }
+.order-item { display: flex; justify-content: space-between; gap: 20px; padding-top: 12px; line-height: 1.5; }
+.order-item span:first-child { overflow-wrap: anywhere; }
+.order-item span:last-child { flex: none; color: #52665a; }
 .admin-footer { margin-top: 24px; color: #a0aca4; font-size: 11px; }
 .admin-footer a { color: #648a70; font-weight: 700; }
 @media (max-width: 1050px) { .admin-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
