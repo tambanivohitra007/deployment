@@ -1,11 +1,15 @@
 const API = 'https://dummyjson.com/products';
 const PAGE_SIZE = 10;
+const STORE_PAGE_SIZE = 12;
 // This catalog lives in the browser. DummyJSON simulates writes, so changes
 // disappear when the page is refreshed.
 const state = {
   products: [],
   page: 1,
   query: '',
+  storeQuery: '',
+  storeCategory: '',
+  storePage: 1,
   editingId: null,
   loading: true,
 };
@@ -23,6 +27,10 @@ let toastTimer;
 // Wait for the catalog before allowing actions that depend on it.
 $('#add-button').disabled = true;
 $('#search').disabled = true;
+$('#store-search').disabled = true;
+$('#store-category').disabled = true;
+$('#store-previous').disabled = true;
+$('#store-next').disabled = true;
 
 // Escape product data before inserting it into an HTML template.
 function escapeHtml(value) {
@@ -69,13 +77,20 @@ async function loadProducts() {
     state.products = data.products.map((product) => ({ ...product, local: false }));
     state.loading = false;
     status.classList.remove('is-loading');
+    $('#store-status').classList.remove('is-loading');
     $('#add-button').disabled = false;
     $('#search').disabled = false;
+    $('#store-search').disabled = false;
+    $('#store-category').disabled = false;
     render();
   } catch (error) {
     state.loading = false;
     status.classList.remove('is-loading');
+    $('#store-status').classList.remove('is-loading');
     status.textContent = 'Could not load products. Check your connection and refresh the page.';
+    $('#store-status').textContent = 'Could not load products. Check your connection and refresh the page.';
+    $('#store-count').textContent = 'Catalog unavailable';
+    $('#store-page-info').textContent = 'Catalog unavailable';
     $('#page-info').textContent = 'Catalog unavailable';
     $('#previous').disabled = true;
     $('#next').disabled = true;
@@ -146,6 +161,74 @@ function render(highlightId = null) {
     : 'Showing 0 products';
   $('#previous').disabled = state.page <= 1;
   $('#next').disabled = state.page >= pages;
+  renderStore();
+}
+
+// Both views use the same in-memory products, but have separate filters and pages.
+function renderStore() {
+  const categorySelect = $('#store-category');
+  const categories = [...new Set(state.products.map((product) => product.category).filter(Boolean))].sort();
+  if (state.storeCategory && !categories.includes(state.storeCategory)) {
+    state.storeCategory = '';
+  }
+  categorySelect.innerHTML = '<option value="">All categories</option>' + categories.map((category) =>
+    `<option value="${escapeHtml(category)}">${escapeHtml(category.replace(/-/g, ' '))}</option>`
+  ).join('');
+  categorySelect.value = state.storeCategory;
+
+  const query = state.storeQuery.trim().toLowerCase();
+  const filtered = state.products.filter((product) => {
+    const matchesSearch = [product.title, product.category, product.brand].some((value) =>
+      String(value || '').toLowerCase().includes(query)
+    );
+    return matchesSearch && (!state.storeCategory || product.category === state.storeCategory);
+  });
+  const pages = Math.max(1, Math.ceil(filtered.length / STORE_PAGE_SIZE));
+  state.storePage = Math.min(state.storePage, pages);
+  const start = (state.storePage - 1) * STORE_PAGE_SIZE;
+  const visible = filtered.slice(start, start + STORE_PAGE_SIZE);
+
+  $('#store-count').textContent = `${filtered.length} ${filtered.length === 1 ? 'product' : 'products'} to explore`;
+  $('#store-products').innerHTML = visible.map((product) => {
+    const image = product.thumbnail && /^https?:\/\//i.test(product.thumbnail)
+      ? `<img src="${escapeHtml(product.thumbnail)}" alt="" loading="lazy" class="h-full w-full object-contain motion-safe:transition motion-safe:duration-300 motion-safe:group-hover:scale-105">`
+      : '<span aria-hidden="true" class="text-5xl text-emerald-700">◇</span>';
+    const price = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(product.price) || 0);
+    return `
+      <article class="store-card group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="grid h-52 place-items-center overflow-hidden bg-[#f1f5f1] p-5">${image}</div>
+        <div class="p-5">
+          <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">${escapeHtml((product.category || 'Uncategorized').replace(/-/g, ' '))}</p>
+          <h3 class="mt-2 text-base font-bold text-slate-900">${escapeHtml(product.title)}</h3>
+          <p class="mt-1 text-sm text-slate-400">${escapeHtml(product.brand || 'Stockroom collection')}</p>
+          <div class="mt-5 flex items-center justify-between gap-2"><span class="font-bold text-slate-900">${price}</span><button type="button" data-store-id="${escapeHtml(product.id)}" aria-label="View details for ${escapeHtml(product.title)}" class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700">View details</button></div>
+        </div>
+      </article>`;
+  }).join('');
+  const storeStatus = $('#store-status');
+  storeStatus.classList.toggle('hidden', filtered.length > 0);
+  if (!filtered.length) storeStatus.textContent = 'No products found. Try a different search or category.';
+  $('#store-page-info').textContent = filtered.length
+    ? `Showing ${start + 1}–${Math.min(start + STORE_PAGE_SIZE, filtered.length)} of ${filtered.length} products`
+    : 'Showing 0 products';
+  $('#store-previous').disabled = state.storePage <= 1;
+  $('#store-next').disabled = state.storePage >= pages;
+}
+
+// Hash navigation keeps both views in the same tab and preserves demo changes.
+function showCurrentView() {
+  const isAdmin = window.location.hash === '#admin';
+  $('#admin-view').classList.toggle('hidden', !isAdmin);
+  $('#store-view').classList.toggle('hidden', isAdmin);
+  for (const [selector, active] of [['#nav-store', !isAdmin], ['#nav-admin', isAdmin]]) {
+    const link = $(selector);
+    link.classList.toggle('bg-white', active);
+    link.classList.toggle('text-slate-900', active);
+    link.classList.toggle('shadow-sm', active);
+    link.classList.toggle('text-slate-500', !active);
+    if (active) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  }
 }
 
 // Reuse the same form for creating a product and editing an existing one.
@@ -164,7 +247,7 @@ function openForm(product) {
 }
 
 // Show details from the current catalog, including any session edits.
-function openDetails(product) {
+function openDetails(product, isAdmin = true) {
   $('#detail-title').textContent = product.title;
   $('#detail-description').textContent = product.description || 'No description available.';
   const image = $('#detail-image');
@@ -194,6 +277,7 @@ function openDetails(product) {
       <dt class="text-xs font-bold uppercase tracking-wider text-slate-400">${escapeHtml(label)}</dt>
       <dd class="mt-1.5 break-words text-sm font-semibold text-slate-700">${escapeHtml(value)}</dd>
     </div>`).join('');
+  $('#edit-detail').classList.toggle('hidden', !isAdmin);
   $('#edit-detail').onclick = () => {
     detailDialog.close();
     openForm(product);
@@ -202,6 +286,31 @@ function openDetails(product) {
 }
 
 // Connect the page controls to their actions.
+window.addEventListener('hashchange', showCurrentView);
+$('#store-search').addEventListener('input', (event) => {
+  state.storeQuery = event.target.value;
+  state.storePage = 1;
+  renderStore();
+});
+$('#store-category').addEventListener('change', (event) => {
+  state.storeCategory = event.target.value;
+  state.storePage = 1;
+  renderStore();
+});
+$('#store-previous').addEventListener('click', () => {
+  state.storePage--;
+  renderStore();
+});
+$('#store-next').addEventListener('click', () => {
+  state.storePage++;
+  renderStore();
+});
+$('#store-products').addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-store-id]');
+  if (!button) return;
+  const product = state.products.find((item) => String(item.id) === button.dataset.storeId);
+  if (product) openDetails(product, false);
+});
 $('#add-button').addEventListener('click', () => openForm());
 $('#close-detail').addEventListener('click', () => detailDialog.close());
 $('#dismiss-detail').addEventListener('click', () => detailDialog.close());
@@ -315,4 +424,5 @@ list.addEventListener('click', async (event) => {
 });
 
 // Start the app when the script loads.
+showCurrentView();
 loadProducts();
