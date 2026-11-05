@@ -61,10 +61,13 @@
         <div class="rail-heading"><span>Featured pieces</span><span>01 / 02</span></div>
         <div id="featured-products"><p class="rail-message">Discovering the collection...</p></div>
       </aside>
-      <div class="campaign">
-        <img class="campaign-image" src="assets/editorial-hero.png" alt="Fashion models in neutral clothing in a softly lit studio">
-        <div class="campaign-copy"><span class="campaign-kicker">The Stockroom edit</span><h1>Objects of<br>everyday life</h1><p>A considered collection of pieces for the moments that make up your day.</p></div>
-        <div class="campaign-bottom"><p>The everyday edit</p><a href="#collection">Explore the collection &rarr;</a></div>
+      <div id="showcase" class="campaign" role="region" aria-roledescription="carousel" aria-label="Featured catalog products">
+        <div class="campaign-copy"><span class="campaign-kicker">The Stockroom edit</span><h1>The collection<br>in motion</h1><p>Explore the pieces in our catalog, one by one.</p></div>
+        <div id="showcase-stage" class="showcase-stage"><p class="showcase-message">Loading the collection...</p></div>
+        <div class="showcase-footer">
+          <div id="showcase-caption" class="showcase-caption"><span class="campaign-kicker">Featured product</span><p>Discover the collection</p></div>
+          <div class="showcase-actions" aria-label="Catalog carousel controls"><button id="showcase-prev" type="button" aria-label="Previous product" disabled>&larr;</button><button id="showcase-toggle" type="button" disabled>Pause</button><button id="showcase-next" type="button" aria-label="Next product" disabled>&rarr;</button></div>
+        </div>
       </div>
     </section>
     <section id="collection" aria-labelledby="collection-title" class="collection-section">
