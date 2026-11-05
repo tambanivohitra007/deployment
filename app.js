@@ -313,24 +313,61 @@ function openForm(product) {
 function openDetails(product, isAdmin = true) {
   $('#detail-title').textContent = product.title;
   $('#detail-description').textContent = product.description || 'No description available.';
-  const image = $('#detail-image');
-  image.replaceChildren();
-  if (product.thumbnail && /^https?:\/\//i.test(product.thumbnail)) {
+  $('#detail-category').textContent = (product.category || 'Product details').replace(/-/g, ' ');
+  $('#detail-price').textContent = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(Number(product.price) || 0);
+
+  const imageContainer = $('#detail-image');
+  const gallery = $('#detail-gallery');
+  gallery.replaceChildren();
+  // Some products have multiple photos; session-created products may have none.
+  const images = [...new Set([product.thumbnail, ...(Array.isArray(product.images) ? product.images : [])]
+    .filter((url) => typeof url === 'string' && /^https?:\/\//i.test(url)))];
+  const thumbnails = [];
+
+  function showDetailImage(url) {
+    imageContainer.replaceChildren();
+    if (!url) {
+      imageContainer.textContent = '◇';
+      return;
+    }
     const img = document.createElement('img');
-    img.src = product.thumbnail;
+    img.src = url;
     img.alt = product.title;
-    img.className = 'h-40 w-full object-contain';
-    image.append(img);
-  } else {
-    image.textContent = '◇';
+    img.onerror = () => {
+      // Ignore errors from an image that is no longer selected.
+      if (img.parentNode === imageContainer) {
+        const message = document.createElement('span');
+        message.className = 'detail-image-message';
+        message.textContent = 'Image unavailable';
+        imageContainer.replaceChildren(message);
+      }
+    };
+    imageContainer.append(img);
+    thumbnails.forEach((button, index) => button.setAttribute('aria-pressed', String(images[index] === url)));
   }
+
+  if (images.length > 1) {
+    images.forEach((url, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'detail-thumbnail';
+      button.setAttribute('aria-label', `Show product image ${index + 1}`);
+      const thumbnail = document.createElement('img');
+      thumbnail.src = url;
+      thumbnail.alt = '';
+      button.append(thumbnail);
+      button.addEventListener('click', () => showDetailImage(url));
+      thumbnails.push(button);
+      gallery.append(button);
+    });
+  }
+  showDetailImage(images[0]);
+
   const fields = [
-    ['Category', product.category ? product.category.replace(/-/g, ' ') : 'Not specified'],
     ['Brand', product.brand || 'Not specified'],
-    ['Price', new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(Number(product.price) || 0)],
     ['Stock', `${Number(product.stock) || 0} items`],
     ['SKU', product.sku || 'Not available'],
     ['Rating', product.rating == null ? 'Not available' : `${product.rating} / 5`],

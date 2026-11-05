@@ -95,15 +95,24 @@
     </section>
     <p class="mt-6 text-center text-xs text-slate-400">Made for the little details. Powered by <a class="font-semibold text-emerald-700 hover:underline" href="https://dummyjson.com/docs/products" target="_blank" rel="noopener noreferrer">DummyJSON</a>.</p>
   </main>
-  <dialog id="detail-dialog" aria-labelledby="detail-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-xl rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <div class="p-6 sm:p-8">
-      <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-[.18em] text-emerald-700">Product details</p><h2 id="detail-title" class="mt-2 text-2xl font-extrabold text-slate-900"></h2></div><button type="button" id="close-detail" aria-label="Close product details" class="rounded-lg px-2 text-2xl text-slate-400 hover:bg-slate-100 hover:text-slate-700">×</button></div>
-      <div class="mt-6 grid gap-6 sm:grid-cols-[160px_1fr]">
-        <div id="detail-image" class="grid min-h-40 place-items-center overflow-hidden rounded-xl bg-slate-50 text-4xl text-emerald-700"></div>
-        <div><p class="text-xs font-bold uppercase tracking-wider text-slate-400">Description</p><p id="detail-description" class="mt-2 text-sm leading-6 text-slate-600"></p></div>
+  <dialog id="detail-dialog" aria-labelledby="detail-title" aria-describedby="detail-description" class="detail-dialog">
+    <button type="button" id="close-detail" aria-label="Close product details" class="detail-close">&times;</button>
+    <div class="detail-layout">
+      <div class="detail-visual">
+        <p class="detail-visual-label">The Stockroom collection <span aria-hidden="true">/</span> Product view</p>
+        <div id="detail-image" class="detail-image"></div>
+        <div id="detail-gallery" class="detail-gallery" aria-label="Product images"></div>
       </div>
-      <dl id="detail-fields" class="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-6 sm:grid-cols-3"></dl>
-      <div class="mt-8 flex justify-end gap-3"><button type="button" id="dismiss-detail" class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Close</button><button type="button" id="edit-detail" class="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-800">Edit product</button></div>
+      <div class="detail-content">
+        <p id="detail-category" class="detail-eyebrow">Product details</p>
+        <h2 id="detail-title" class="detail-title"></h2>
+        <p id="detail-price" class="detail-price"></p>
+        <div class="detail-divider"></div>
+        <p class="detail-section-label">The details</p>
+        <p id="detail-description" class="detail-description"></p>
+        <dl id="detail-fields" class="detail-fields"></dl>
+        <div class="detail-actions"><button type="button" id="dismiss-detail" class="detail-button detail-button-secondary">Close</button><button type="button" id="edit-detail" class="detail-button detail-button-primary">Edit product <span aria-hidden="true">&rarr;</span></button></div>
+      </div>
     </div>
   </dialog>
   <dialog id="product-dialog" aria-labelledby="dialog-title" class="m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
