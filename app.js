@@ -1,6 +1,7 @@
 const API = 'https://dummyjson.com/products';
 const PAGE_SIZE = 10;
 const STORE_PAGE_SIZE = 12;
+const SHOWCASE_INTERVAL = 5000;
 // This catalog lives in the browser. DummyJSON simulates writes, so changes
 // disappear when the page is refreshed.
 const state = {
@@ -10,6 +11,8 @@ const state = {
   storeQuery: '',
   storeCategory: '',
   storePage: 1,
+  showcaseIndex: 0,
+  showcasePaused: false,
   editingId: null,
   loading: true,
 };
@@ -22,6 +25,7 @@ const dialog = $('#product-dialog');
 const detailDialog = $('#detail-dialog');
 const form = $('#product-form');
 const saveButton = $('#save-button');
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 let toastTimer;
 
 // Wait for the catalog before allowing actions that depend on it.
@@ -90,6 +94,8 @@ async function loadProducts() {
     status.textContent = 'Could not load products. Check your connection and refresh the page.';
     $('#store-status').textContent = 'Could not load products. Check your connection and refresh the page.';
     $('#featured-products').innerHTML = '<p class="rail-message">Products are temporarily unavailable.</p>';
+    $('#showcase-stage').innerHTML = '<p class="showcase-message">Products are temporarily unavailable.</p>';
+    $('#showcase-caption').textContent = 'Catalog unavailable';
     $('#store-count').textContent = 'Catalog unavailable';
     $('#store-page-info').textContent = 'Catalog unavailable';
     $('#page-info').textContent = 'Catalog unavailable';
@@ -163,6 +169,54 @@ function render(highlightId = null) {
   $('#previous').disabled = state.page <= 1;
   $('#next').disabled = state.page >= pages;
   renderStore();
+  renderShowcase();
+}
+
+// The carousel uses real catalog products, with clothing first for the editorial layout.
+function showcaseProducts() {
+  const clothing = ['tops', 'womens-dresses', 'mens-shirts', 'womens-shoes', 'mens-shoes'];
+  return [...state.products].sort((a, b) =>
+    Number(clothing.includes(b.category)) - Number(clothing.includes(a.category))
+  );
+}
+
+function renderShowcase() {
+  const products = showcaseProducts();
+  const stage = $('#showcase-stage');
+  const previous = $('#showcase-prev');
+  const next = $('#showcase-next');
+  const toggle = $('#showcase-toggle');
+  previous.disabled = products.length < 2;
+  next.disabled = products.length < 2;
+  toggle.disabled = products.length < 2 || reducedMotion.matches;
+  toggle.textContent = reducedMotion.matches ? 'Motion reduced' : state.showcasePaused ? 'Play' : 'Pause';
+
+  if (!products.length) {
+    stage.innerHTML = '<p class="showcase-message">No products available yet.</p>';
+    $('#showcase-caption').textContent = 'The collection is empty';
+    return;
+  }
+
+  state.showcaseIndex %= products.length;
+  const current = products[state.showcaseIndex];
+  const imageFor = (product) => product.thumbnail && /^https?:\/\//i.test(product.thumbnail)
+    ? `<img src="${escapeHtml(product.thumbnail)}" alt="">`
+    : '<span class="showcase-placeholder" aria-hidden="true">◇</span>';
+  const before = products[(state.showcaseIndex - 1 + products.length) % products.length];
+  const after = products[(state.showcaseIndex + 1) % products.length];
+  stage.innerHTML = `
+    <div class="showcase-item showcase-side" aria-hidden="true">${products.length > 1 ? imageFor(before) : ''}</div>
+    <button type="button" class="showcase-item showcase-main" data-store-id="${escapeHtml(current.id)}" aria-label="View details for ${escapeHtml(current.title)}">${imageFor(current)}</button>
+    <div class="showcase-item showcase-side" aria-hidden="true">${products.length > 2 ? imageFor(after) : ''}</div>`;
+  const price = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(current.price) || 0);
+  $('#showcase-caption').innerHTML = `<span class="campaign-kicker">${escapeHtml((current.category || 'Featured product').replace(/-/g, ' '))} · ${state.showcaseIndex + 1} / ${products.length}</span><p>${escapeHtml(current.title)}</p><span>${price}</span>`;
+}
+
+function advanceShowcase(direction) {
+  const count = state.products.length;
+  if (count < 2) return;
+  state.showcaseIndex = (state.showcaseIndex + direction + count) % count;
+  renderShowcase();
 }
 
 // Both views use the same in-memory products, but have separate filters and pages.
@@ -296,6 +350,13 @@ function openDetails(product, isAdmin = true) {
 
 // Connect the page controls to their actions.
 window.addEventListener('hashchange', showCurrentView);
+$('#showcase-prev').addEventListener('click', () => advanceShowcase(-1));
+$('#showcase-next').addEventListener('click', () => advanceShowcase(1));
+$('#showcase-toggle').addEventListener('click', () => {
+  state.showcasePaused = !state.showcasePaused;
+  renderShowcase();
+});
+reducedMotion.addEventListener('change', renderShowcase);
 $('#store-search').addEventListener('input', (event) => {
   state.storeQuery = event.target.value;
   state.storePage = 1;
@@ -322,6 +383,7 @@ function handleStoreProductClick(event) {
 }
 $('#store-products').addEventListener('click', handleStoreProductClick);
 $('#featured-products').addEventListener('click', handleStoreProductClick);
+$('#showcase-stage').addEventListener('click', handleStoreProductClick);
 $('#add-button').addEventListener('click', () => openForm());
 $('#close-detail').addEventListener('click', () => detailDialog.close());
 $('#dismiss-detail').addEventListener('click', () => detailDialog.close());
@@ -437,3 +499,11 @@ list.addEventListener('click', async (event) => {
 // Start the app when the script loads.
 showCurrentView();
 loadProducts();
+// Stop moving while the user is interacting, viewing a dialog, or on another tab.
+setInterval(() => {
+  const showcase = $('#showcase');
+  if (state.loading || state.showcasePaused || reducedMotion.matches || document.hidden ||
+      window.location.hash === '#admin' || dialog.open || detailDialog.open ||
+      showcase.matches(':hover') || showcase.contains(document.activeElement)) return;
+  advanceShowcase(1);
+}, SHOWCASE_INTERVAL);
