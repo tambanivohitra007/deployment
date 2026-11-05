@@ -1,9 +1,8 @@
-export const API = 'https://dummyjson.com/products';
+export const API = '/api/products';
 export const PAGE_SIZE = 10;
 export const STORE_PAGE_SIZE = 12;
 export const SHOWCASE_INTERVAL = 5000;
-// This catalog lives in the browser. DummyJSON simulates writes, so changes
-// disappear when the page is refreshed.
+// These are browser copies of server data. SQLite is the source of truth.
 export const state = {
   products: [],
   page: 1,
@@ -17,6 +16,11 @@ export const state = {
   cartNotice: '',
   lastOrder: null,
   orders: [],
+  admin: null,
+  authReady: false,
+  checkoutBusy: false,
+  pendingCheckout: null,
   editingId: null,
+  editingVersion: null,
   loading: true,
 };

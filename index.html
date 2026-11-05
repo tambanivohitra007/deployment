@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stockroom | Storefront & Admin</title>
-  <meta name="description" content="Explore and manage a demo product catalog powered by DummyJSON.">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="Explore the Stockroom collection and manage your store.">
+  <link rel="stylesheet" href="assets/tailwind.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -90,8 +90,22 @@
       <p id="cart-notice" class="order-confirmation hidden" role="status"></p>
       <div class="bag-layout">
         <section aria-label="Items in your bag"><div id="cart-items" class="bag-items"></div><p id="cart-empty" class="bag-empty">Your bag is empty. <a href="#collection">Explore the collection &rarr;</a></p></section>
-        <aside class="bag-summary" aria-labelledby="summary-title"><h2 id="summary-title">Order summary</h2><div class="bag-summary-line"><span>Items</span><span id="summary-quantity">0</span></div><div class="bag-summary-line bag-total"><span>Demo total</span><strong id="summary-total">$0.00</strong></div><p class="bag-summary-note">Demo only. No payment is taken, no order is sent, and no delivery is arranged. Taxes and shipping are not calculated.</p><button id="place-order" type="button" class="bag-checkout" disabled>Place demo order</button><a href="#collection" class="bag-continue">Continue browsing &rarr;</a></aside>
+        <aside class="bag-summary" aria-labelledby="summary-title"><h2 id="summary-title">Order summary</h2><div class="bag-summary-line"><span>Items</span><span id="summary-quantity">0</span></div><div class="bag-summary-line bag-total"><span>Demo total</span><strong id="summary-total">$0.00</strong></div><p class="bag-summary-note">Demo checkout saves an order and updates stock. No payment is taken or delivery arranged. Taxes and shipping are not calculated.</p><button id="place-order" type="button" class="bag-checkout" disabled>Place demo order</button><a href="#collection" class="bag-continue">Continue browsing &rarr;</a></aside>
       </div>
+    </div>
+  </main>
+  <main id="login-view" tabindex="-1" class="hidden login-page">
+    <div class="login-card">
+      <p class="admin-kicker">STOCKROOM WORKSPACE</p>
+      <h1>Welcome back</h1>
+      <p class="login-intro">Sign in to manage your products and orders.</p>
+      <form id="login-form">
+        <label>Email address<input name="email" type="email" autocomplete="username" maxlength="254" required></label>
+        <label>Password<input name="password" type="password" autocomplete="current-password" minlength="12" maxlength="128" required></label>
+        <p id="login-error" role="alert"></p>
+        <button id="login-button" type="submit">Sign in to workspace <span aria-hidden="true">&rarr;</span></button>
+      </form>
+      <a href="#store" class="login-return">&larr; Back to the storefront</a>
     </div>
   </main>
   <main id="admin-view" tabindex="-1" class="hidden admin-dashboard">
@@ -104,8 +118,9 @@
         <button id="orders-link" type="button"><span aria-hidden="true">&#9776;</span> Orders</button>
         <a href="#collection"><span aria-hidden="true">&#9635;</span> Collection</a>
         <a href="#store"><span aria-hidden="true">&#8599;</span> View storefront</a>
+        <button id="logout-button" type="button"><span aria-hidden="true">&#8592;</span> Sign out</button>
       </nav>
-      <div class="admin-sidebar-note"><span class="admin-status-dot"></span><div><strong>Demo workspace</strong><p>Changes last for this tab only.</p></div></div>
+      <div class="admin-sidebar-note"><span class="admin-status-dot"></span><div><strong>Signed in</strong><p id="admin-email"></p></div></div>
     </aside>
     <div class="admin-content">
     <div class="admin-topline"><span>Workspace <span aria-hidden="true">/</span> Overview</span><span class="admin-demo-badge"><span class="admin-status-dot"></span> Demo mode</span></div>
@@ -113,7 +128,8 @@
       <div><p class="admin-kicker">YOUR WORKSPACE</p><h1>Inventory overview</h1><p>Manage your products and keep an eye on your catalog.</p></div>
       <button id="add-button" type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-200"><span class="text-xl leading-none">+</span> Add product</button>
     </div>
-    <div class="admin-notice"><span aria-hidden="true">&#9432;</span><p><strong>Demo workspace.</strong> No sign-in is required. DummyJSON simulates changes; they remain visible in this tab until refresh.</p></div>
+    <div class="admin-notice"><span aria-hidden="true">&#9432;</span><p><strong>Your workspace is connected.</strong> Products and orders are saved. Checkout remains a demo; no payments are collected.</p></div>
+    <div class="workspace-refresh"><p id="workspace-status" role="status">Refresh to see the latest inventory and orders.</p><button id="refresh-admin" type="button">Refresh workspace</button></div>
     <section class="admin-metrics" aria-label="Inventory summary">
       <article class="metric-card"><div class="metric-head"><span>Total products</span><span class="metric-icon" aria-hidden="true">&#9638;</span></div><strong id="metric-products">&mdash;</strong><p>Products in your catalog</p></article>
       <article class="metric-card"><div class="metric-head"><span>Units in stock</span><span class="metric-icon metric-icon-blue" aria-hidden="true">&#9636;</span></div><strong id="metric-units">&mdash;</strong><p>Across all products</p></article>
@@ -131,8 +147,8 @@
       <div class="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 px-5 py-4 text-sm text-slate-500"><span id="page-info">Loading catalog...</span><div class="flex gap-2"><button id="previous" type="button" class="rounded-lg border border-slate-200 px-3 py-2 font-semibold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">Previous</button><button id="next" type="button" class="rounded-lg border border-slate-200 px-3 py-2 font-semibold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">Next</button></div></div>
     </section>
     <section id="orders-section" tabindex="-1" aria-labelledby="orders-title" class="admin-orders">
-      <div class="orders-heading"><div><p class="admin-kicker">SALES ACTIVITY</p><h2 id="orders-title">Demo orders <span id="orders-count" class="orders-count">0</span></h2><p>Review orders and update their demo status.</p></div><span class="orders-demo-label">This tab only</span></div>
-      <p class="orders-notice">Demo only: no payment, order, or delivery is processed. Status changes are for demonstration and do not trigger fulfillment.</p>
+      <div class="orders-heading"><div><p class="admin-kicker">SALES ACTIVITY</p><h2 id="orders-title">Demo orders <span id="orders-count" class="orders-count">0</span></h2><p>Review saved orders and update their status.</p></div><span class="orders-demo-label">Saved orders</span></div>
+      <p class="orders-notice">No payments or deliveries are processed. Status changes are saved but do not trigger fulfillment.</p>
       <div id="orders-list" class="orders-list"><p class="orders-empty">No demo orders yet. Orders placed in the storefront will appear here.</p></div>
     </section>
     <p class="admin-footer">Stockroom &middot; Demo catalog powered by <a href="https://dummyjson.com/docs/products" target="_blank" rel="noopener noreferrer">DummyJSON</a></p>

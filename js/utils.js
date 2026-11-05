@@ -28,14 +28,7 @@ export function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.add('hidden'), 3500);
 }
 
-// fetch() does not reject for HTTP errors, so check the response explicitly.
-export async function request(url, options) {
-  const response = await fetch(url, options);
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status}).`);
-  }
-  return response.json();
-}
+export { request } from './api.js';
 
 export function stockAvailable(product) {
   return Math.max(0, Math.floor(Number(product.stock) || 0));

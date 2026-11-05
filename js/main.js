@@ -1,7 +1,9 @@
-import { state, API, SHOWCASE_INTERVAL } from './state.js';
-import { $, request, reducedMotion } from './utils.js';
-import { render, status, dialog } from './admin.js';
+import { state, SHOWCASE_INTERVAL } from './state.js';
+import { $, showToast, reducedMotion } from './utils.js';
+import { render, renderOrders, status, dialog } from './admin.js';
 import { advanceShowcase, detailDialog } from './store.js';
+import { loadSession, signIn, signOut } from './api.js';
+import { loadCatalog, loadOrders } from './data.js';
 import './cart.js';
 
 // Wait for the catalog before allowing actions that depend on it.
@@ -18,13 +20,11 @@ async function loadProducts() {
   status.classList.remove('hidden');
   status.textContent = 'Loading products...';
   try {
-    // DummyJSON uses limit=0 to return all products.
-    const data = await request(`${API}?limit=0`);
-    state.products = data.products.map((product) => ({ ...product, local: false }));
+    await loadCatalog();
     state.loading = false;
     status.classList.remove('is-loading');
     $('#store-status').classList.remove('is-loading');
-    $('#add-button').disabled = false;
+    $('#add-button').disabled = !state.admin;
     $('#search').disabled = false;
     $('#store-search').disabled = false;
     $('#store-category').disabled = false;
@@ -47,20 +47,20 @@ async function loadProducts() {
   }
 }
 
-// Hash navigation keeps all views in the same tab and preserves demo changes.
+// Navigation hides the workspace until signed in; API routes enforce access too.
 function showCurrentView() {
   const hash = window.location.hash;
-  const view = hash === '#admin' ? 'admin' : hash === '#collection' ? 'collection' : hash === '#cart' ? 'cart' : 'store';
-  for (const name of ['store', 'collection', 'cart', 'admin']) {
+  const view = hash === '#admin' ? (state.admin ? 'admin' : 'login') : hash === '#collection' ? 'collection' : hash === '#cart' ? 'cart' : 'store';
+  for (const name of ['store', 'collection', 'cart', 'admin', 'login']) {
     $(`#${name}-view`).classList.toggle('hidden', name !== view);
   }
-  const titles = { store: 'Storefront', collection: 'Collection', cart: 'Shopping bag', admin: 'Admin' };
+  const titles = { store: 'Storefront', collection: 'Collection', cart: 'Shopping bag', admin: 'Admin', login: 'Admin sign-in' };
   document.title = `${titles[view]} | Stockroom`;
   for (const [selector, active] of [
     ['#nav-store', view === 'store'],
     ['#nav-collection', view === 'collection'],
     ['#nav-cart', view === 'cart'],
-    ['#nav-admin', view === 'admin'],
+    ['#nav-admin', view === 'admin' || view === 'login'],
   ]) {
     const link = $(selector);
     if (active) link.setAttribute('aria-current', 'page');
@@ -73,11 +73,83 @@ window.addEventListener('hashchange', () => {
   const view = showCurrentView();
   window.scrollTo(0, 0);
   $(`#${view}-view`).focus({ preventScroll: true });
+  if (view === 'admin') refreshWorkspace();
 });
 
-// Start the app when the script loads.
+async function refreshWorkspace() {
+  const button = $('#refresh-admin');
+  if (button.disabled || !state.admin) return;
+  button.disabled = true;
+  try {
+    await Promise.all([loadCatalog(), loadOrders()]);
+    render();
+    renderOrders();
+    $('#workspace-status').textContent = 'Workspace is up to date.';
+  } catch (error) {
+    $('#workspace-status').textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+window.addEventListener('sessionchange', () => {
+  showCurrentView();
+  $('#admin-email').textContent = state.admin?.email || '';
+  $('#add-button').disabled = state.loading || !state.admin;
+  if (!state.admin) {
+    dialog.close();
+    detailDialog.close();
+    renderOrders();
+  }
+});
+$('#refresh-admin').addEventListener('click', refreshWorkspace);
+$('#login-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (state.pendingCheckout) {
+    $('#login-error').textContent = 'Finish checking your pending demo order in the bag before signing in.';
+    return;
+  }
+  const form = event.currentTarget;
+  const button = $('#login-button');
+  button.disabled = true;
+  $('#login-error').textContent = '';
+  try {
+    await signIn(form.elements.email.value, form.elements.password.value);
+    form.reset();
+    await refreshWorkspace();
+    $('#admin-view').focus();
+  } catch (error) {
+    $('#login-error').textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+$('#logout-button').addEventListener('click', async () => {
+  if (state.pendingCheckout) return showToast('Finish checking your pending demo order in the bag before signing out.');
+  $('#logout-button').disabled = true;
+  try {
+    await signOut();
+    $('#login-view').focus();
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    $('#logout-button').disabled = false;
+  }
+});
+
+// Establish the session before enabling checkout or showing a protected view.
 showCurrentView();
-loadProducts();
+async function start() {
+  try {
+    await loadSession();
+  } catch (error) {
+    $('#login-error').textContent = error.message;
+    showToast(error.message);
+  }
+  await loadProducts();
+  if (state.admin) await refreshWorkspace();
+}
+start();
 // Stop moving while the user is interacting, viewing a dialog, or on another tab.
 setInterval(() => {
   const showcase = $('#showcase');

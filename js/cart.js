@@ -1,9 +1,32 @@
 import { state } from './state.js';
-import { $, escapeHtml, showToast, stockAvailable, formatMoney } from './utils.js';
+import { $, escapeHtml, showToast, stockAvailable, formatMoney, request } from './utils.js';
 import { render, renderOrders } from './admin.js';
+import { loadCatalog, loadOrders } from './data.js';
+import { loadSession } from './api.js';
 
-// Cart and order data are kept in memory, just like the demo catalog.
+// Keep the bag and an unfinished checkout across refreshes in this browser tab.
+// Never store passwords or session tokens here.
+const storageKey = 'stockroom-bag-v1';
+try {
+  const saved = JSON.parse(sessionStorage.getItem(storageKey));
+  if (Array.isArray(saved?.cart)) {
+    state.cart = saved.cart.filter((item) => item && /^\d+$/.test(item.id) && Number.isInteger(item.quantity) && item.quantity > 0)
+      .map((item) => ({ id: String(item.id), quantity: item.quantity }));
+  }
+  if (saved?.pendingCheckout?.checkoutKey && Array.isArray(saved.pendingCheckout.items)) state.pendingCheckout = saved.pendingCheckout;
+} catch { /* Storage may be disabled; the bag still works until the page closes. */ }
+
+function saveBag() {
+  try {
+    sessionStorage.setItem(storageKey, JSON.stringify({ cart: state.cart, pendingCheckout: state.pendingCheckout }));
+  } catch { /* Private browsing can make storage unavailable. */ }
+}
+
 export function addToCart(product) {
+  if (state.pendingCheckout || state.checkoutBusy) {
+    showToast('Check your pending order in the bag before adding more items.');
+    return false;
+  }
   const item = state.cart.find((entry) => entry.id === String(product.id));
   if ((item?.quantity || 0) >= stockAvailable(product)) {
     showToast('No more units are available in this demo.');
@@ -46,18 +69,26 @@ export function renderCart() {
   $('#summary-quantity').textContent = quantity;
   $('#summary-total').textContent = formatMoney(totalCents);
   $('#cart-empty').classList.toggle('hidden', quantity > 0);
-  $('#place-order').disabled = quantity === 0;
+  const locked = state.checkoutBusy || Boolean(state.pendingCheckout);
+  for (const button of $('#cart-items').querySelectorAll('button')) {
+    if (locked) button.disabled = true;
+  }
+  $('#place-order').disabled = state.checkoutBusy || (!state.pendingCheckout && quantity === 0);
+  $('#place-order').textContent = state.checkoutBusy ? 'Checking order…' : state.pendingCheckout ? 'Check pending order' : 'Place demo order';
+  if (state.pendingCheckout && !state.cartNotice) state.cartNotice = 'Your last checkout has not been confirmed. Check the pending order before starting another.';
   $('#cart-notice').textContent = state.cartNotice;
   $('#cart-notice').classList.toggle('hidden', !state.cartNotice);
   const confirmation = $('#order-confirmation');
   confirmation.classList.toggle('hidden', !state.lastOrder);
   confirmation.innerHTML = state.lastOrder
-    ? `<strong>Demo order complete</strong>${state.lastOrder.quantity} ${state.lastOrder.quantity === 1 ? 'item' : 'items'} · ${formatMoney(state.lastOrder.totalCents)}. No payment was taken and no order was sent. Stock changes are only in this tab.`
+    ? `<strong>Demo order saved · ${escapeHtml(state.lastOrder.reference)}</strong>${state.lastOrder.quantity} ${state.lastOrder.quantity === 1 ? 'item' : 'items'} · ${formatMoney(state.lastOrder.totalCents)}. No payment was taken or delivery arranged. Inventory has been updated.`
     : '';
+  saveBag();
   return adjusted;
 }
 
 $('#cart-items').addEventListener('click', (event) => {
+  if (state.checkoutBusy || state.pendingCheckout) return;
   const button = event.target.closest('button[data-cart-action]');
   if (!button) return;
   const item = state.cart.find((entry) => entry.id === button.dataset.cartId);
@@ -71,30 +102,45 @@ $('#cart-items').addEventListener('click', (event) => {
   state.cartNotice = '';
   renderCart();
 });
-$('#place-order').addEventListener('click', () => {
+$('#place-order').addEventListener('click', async () => {
+  if (state.checkoutBusy) return;
   // If stock changed, let the shopper review the adjusted bag before ordering.
-  if (renderCart()) return;
-  if (!state.cart.length) return;
-  const order = {
-    reference: `DEMO-${String(state.orders.length + 1).padStart(4, '0')}`,
-    createdAt: new Date().toISOString(),
-    status: 'new',
-    items: [],
-    quantity: 0,
-    totalCents: 0,
-  };
-  for (const item of state.cart) {
-    const product = state.products.find((entry) => String(entry.id) === item.id);
-    const priceCents = Math.round((Number(product.price) || 0) * 100);
-    order.items.push({ title: product.title, quantity: item.quantity, priceCents });
-    order.quantity += item.quantity;
-    order.totalCents += priceCents * item.quantity;
-    product.stock = stockAvailable(product) - item.quantity;
+  if (!state.pendingCheckout && (renderCart() || !state.cart.length)) return;
+  state.checkoutBusy = true;
+  try {
+    if (!state.authReady) await loadSession();
+    if (!state.pendingCheckout) {
+      state.pendingCheckout = {
+        checkoutKey: crypto.randomUUID(),
+        items: state.cart.map((item) => ({ productId: Number(item.id), quantity: item.quantity })),
+        expectedTotalCents: state.cart.reduce((total, item) => {
+          const product = state.products.find((entry) => String(entry.id) === item.id);
+          return total + Math.round(product.price * 100) * item.quantity;
+        }, 0),
+      };
+    }
+    // Save the key BEFORE the request; a lost response must not create a second order.
+    saveBag();
+    renderCart();
+    const data = await request('/api/orders', { method: 'POST', body: JSON.stringify(state.pendingCheckout) });
+    state.lastOrder = data.order;
+    state.pendingCheckout = null;
+    state.cart = [];
+    state.cartNotice = '';
+    saveBag();
+  } catch (error) {
+    // A validation rejection is definite. Network/server errors retain the same key for retry.
+    if (error.status >= 400 && error.status < 500 && error.status !== 429) state.pendingCheckout = null;
+    state.cartNotice = error.message;
+    if (state.pendingCheckout) state.cartNotice += ' Use “Check pending order” to safely retry.';
+  } finally {
+    try {
+      await Promise.all([loadCatalog(), loadOrders()]);
+    } catch {
+      state.cartNotice += ' The latest catalog could not be loaded. Refresh when your connection returns.';
+    }
+    state.checkoutBusy = false;
+    render();
+    renderOrders();
   }
-  state.orders.push(order);
-  state.cart = [];
-  state.cartNotice = '';
-  state.lastOrder = order;
-  render();
-  renderOrders();
 });

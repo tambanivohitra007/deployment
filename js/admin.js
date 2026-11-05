@@ -2,6 +2,7 @@ import { state, API, PAGE_SIZE } from './state.js';
 import { $, escapeHtml, showToast, request, formatMoney, reducedMotion } from './utils.js';
 import { renderStore, renderShowcase, openDetails } from './store.js';
 import { renderCart } from './cart.js';
+import { loadCatalog } from './data.js';
 
 export const list = $('#product-list');
 export const status = $('#status');
@@ -147,9 +148,12 @@ function renderAdminSummary() {
 
 // Reuse the same form for creating a product and editing an existing one.
 export function openForm(product) {
+  if (!state.admin) return;
   form.reset();
   $('#form-error').classList.add('hidden');
   state.editingId = product ? String(product.id) : null;
+  // Capture the version when the form opens, so background refreshes cannot mask a conflict.
+  state.editingVersion = product?.version ?? null;
   $('#dialog-title').textContent = product ? 'Edit product' : 'Add product';
   saveButton.textContent = product ? 'Save changes' : 'Add product';
   if (product) {
@@ -170,13 +174,24 @@ $('#orders-link').addEventListener('click', () => {
   orders.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
   orders.focus({ preventScroll: true });
 });
-$('#orders-list').addEventListener('change', (event) => {
+$('#orders-list').addEventListener('change', async (event) => {
   const select = event.target.closest('select[data-order-id]');
   if (!select || !['new', 'processing', 'completed'].includes(select.value)) return;
   const order = state.orders.find((entry) => entry.reference === select.dataset.orderId);
   if (!order) return;
-  order.status = select.value;
-  showToast('Demo order status updated.');
+  select.disabled = true;
+  try {
+    const data = await request(`/api/admin/orders/${order.reference}`, {
+      method: 'PATCH', body: JSON.stringify({ status: select.value }),
+    });
+    Object.assign(order, data.order);
+    showToast('Order status saved.');
+  } catch (error) {
+    select.value = order.status;
+    showToast(error.message);
+  } finally {
+    select.disabled = false;
+  }
 });
 $('#add-button').addEventListener('click', () => openForm());
 $('#close-dialog').addEventListener('click', () => dialog.close());
@@ -197,9 +212,10 @@ $('#next').addEventListener('click', () => {
   render();
 });
 
-// Validate the form, simulate a write, then update the in-memory catalog.
+// Save on the server first, then display the product returned by the database.
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (saveButton.disabled) return;
   const values = Object.fromEntries(new FormData(form));
   for (const field of ['title', 'category', 'brand', 'description']) {
     values[field] = values[field].trim();
@@ -211,33 +227,21 @@ form.addEventListener('submit', async (event) => {
   }
   values.price = Number(values.price);
   values.stock = Number(values.stock);
-  const existing = state.products.find((product) => String(product.id) === state.editingId);
+  const editingId = state.editingId;
+  const existing = editingId !== null;
   let highlightId = null;
   saveButton.disabled = true;
   $('#form-error').classList.add('hidden');
   try {
     if (existing) {
-      // Products created in this session do not exist on the API server.
-      if (!existing.local) {
-        await request(`${API}/${existing.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
-        });
-      }
-      Object.assign(existing, values);
+      const saved = await request(`${API}/${editingId}`, {
+        method: 'PUT', body: JSON.stringify({ ...values, version: state.editingVersion }),
+      });
+      state.products = state.products.map((product) => String(product.id) === editingId ? saved : product);
+      highlightId = saved.id;
     } else {
-      await request(`${API}/add`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
-      });
-      // Use a unique local ID because the API does not persist new products.
-      state.products.unshift({
-        ...values,
-        id: `local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        local: true,
-      });
+      const saved = await request(API, { method: 'POST', body: JSON.stringify(values) });
+      state.products.unshift(saved);
       highlightId = state.products[0].id;
       state.query = '';
       $('#search').value = '';
@@ -245,10 +249,13 @@ form.addEventListener('submit', async (event) => {
     }
     dialog.close();
     render(highlightId);
-    showToast(existing ? 'Product updated for this session.' : 'Product added for this session.');
+    showToast(existing ? 'Product changes saved.' : 'Product added.');
   } catch (error) {
-    $('#form-error').textContent = 'Could not save the product. Please check your connection and try again.';
+    $('#form-error').textContent = error.message;
     $('#form-error').classList.remove('hidden');
+    if (error.status === 409 || error.status === 404) {
+      await loadCatalog().then(() => render()).catch(() => {});
+    }
   } finally {
     saveButton.disabled = false;
   }
@@ -262,13 +269,10 @@ list.addEventListener('click', async (event) => {
   if (!product) return;
   if (button.dataset.action === 'view') return openDetails(product);
   if (button.dataset.action === 'edit') return openForm(product);
-  if (!confirm(`Delete “${product.title}” from this session?`)) return;
+  if (!confirm(`Permanently delete “${product.title}” from the catalog? Existing orders will keep their item details.`)) return;
   button.disabled = true;
   try {
-    // Session-created products only need to be removed from local state.
-    if (!product.local) {
-      await request(`${API}/${product.id}`, { method: 'DELETE' });
-    }
+    await request(`${API}/${product.id}`, { method: 'DELETE', body: JSON.stringify({ version: product.version }) });
     state.products = state.products.filter((item) => item !== product);
     // Fade the deleted row only after the API request succeeds.
     const row = button.closest('tr');
@@ -281,9 +285,10 @@ list.addEventListener('click', async (event) => {
       await animation.finished.catch(() => {});
     }
     render();
-    showToast('Product deleted for this session.');
+    showToast('Product deleted.');
   } catch (error) {
     button.disabled = false;
-    showToast('Could not delete the product. Please try again.');
+    showToast(error.message);
+    if (error.status === 409 || error.status === 404) await loadCatalog().then(() => render()).catch(() => {});
   }
 });
