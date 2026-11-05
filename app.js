@@ -41,6 +41,10 @@ function showToast(message) {
   const toast = $('#toast');
   toast.textContent = message;
   toast.classList.remove('hidden');
+  // Restart the animation if another message is already visible.
+  toast.classList.remove('toast-animate');
+  void toast.offsetWidth;
+  toast.classList.add('toast-animate');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.add('hidden'), 3500);
 }
@@ -64,11 +68,13 @@ async function loadProducts() {
     const data = await request(`${API}?limit=0`);
     state.products = data.products.map((product) => ({ ...product, local: false }));
     state.loading = false;
+    status.classList.remove('is-loading');
     $('#add-button').disabled = false;
     $('#search').disabled = false;
     render();
   } catch (error) {
     state.loading = false;
+    status.classList.remove('is-loading');
     status.textContent = 'Could not load products. Check your connection and refresh the page.';
     $('#page-info').textContent = 'Catalog unavailable';
     $('#previous').disabled = true;
@@ -77,7 +83,7 @@ async function loadProducts() {
 }
 
 // Filter the local catalog, select a page, and redraw the table.
-function render() {
+function render(highlightId = null) {
   const query = state.query.trim().toLowerCase();
   const filtered = state.products.filter((product) =>
     [product.title, product.category, product.brand].some((value) =>
@@ -106,7 +112,7 @@ function render() {
 
     // Product values must be escaped because the rows are inserted as HTML.
     return `
-      <tr class="transition hover:bg-slate-50/70">
+      <tr class="product-row ${product.id === highlightId ? 'product-new' : ''} transition hover:bg-slate-50/70">
         <td class="px-5 py-3">
           <div class="flex items-center gap-3">
             ${image}
@@ -232,6 +238,7 @@ form.addEventListener('submit', async (event) => {
   values.price = Number(values.price);
   values.stock = Number(values.stock);
   const existing = state.products.find((product) => String(product.id) === state.editingId);
+  let highlightId = null;
   saveButton.disabled = true;
   $('#form-error').classList.add('hidden');
   try {
@@ -257,12 +264,13 @@ form.addEventListener('submit', async (event) => {
         id: `local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         local: true,
       });
+      highlightId = state.products[0].id;
       state.query = '';
       $('#search').value = '';
       state.page = 1;
     }
     dialog.close();
-    render();
+    render(highlightId);
     showToast(existing ? 'Product updated for this session.' : 'Product added for this session.');
   } catch (error) {
     $('#form-error').textContent = 'Could not save the product. Please check your connection and try again.';
@@ -288,6 +296,16 @@ list.addEventListener('click', async (event) => {
       await request(`${API}/${product.id}`, { method: 'DELETE' });
     }
     state.products = state.products.filter((item) => item !== product);
+    // Fade the deleted row only after the API request succeeds.
+    const row = button.closest('tr');
+    if (row && row.animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const animation = row.animate(
+        [{ opacity: 1 }, { opacity: 0, transform: 'translateX(8px)' }],
+        { duration: 180, easing: 'ease-in', fill: 'forwards' }
+      );
+      // A search or page change can remove the row before the animation ends.
+      await animation.finished.catch(() => {});
+    }
     render();
     showToast('Product deleted for this session.');
   } catch (error) {
