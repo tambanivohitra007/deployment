@@ -16,6 +16,7 @@ const state = {
   cart: [],
   cartNotice: '',
   lastOrder: null,
+  orders: [],
   editingId: null,
   loading: true,
 };
@@ -239,6 +240,36 @@ function renderCart() {
     ? `<strong>Demo order complete</strong>${state.lastOrder.quantity} ${state.lastOrder.quantity === 1 ? 'item' : 'items'} · ${formatMoney(state.lastOrder.totalCents)}. No payment was taken and no order was sent. Stock changes are only in this tab.`
     : '';
   return adjusted;
+}
+
+// Orders keep a snapshot of the items and prices at the time of demo checkout.
+function renderOrders() {
+  const orders = state.orders;
+  $('#orders-count').textContent = orders.length;
+  const list = $('#orders-list');
+  if (!orders.length) {
+    list.innerHTML = '<p class="orders-empty">No demo orders yet. Orders placed in the storefront will appear here.</p>';
+    return;
+  }
+  const statuses = [['new', 'New'], ['processing', 'Processing'], ['completed', 'Completed']];
+  list.innerHTML = [...orders].reverse().map((order) => {
+    const date = new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(order.createdAt));
+    const options = statuses.map(([value, label]) =>
+      `<option value="${value}" ${order.status === value ? 'selected' : ''}>${label}</option>`
+    ).join('');
+    const items = order.items.map((item) => `
+      <div class="order-item"><span>${escapeHtml(item.title)} × ${item.quantity}</span><span>${formatMoney(item.priceCents * item.quantity)}</span></div>`
+    ).join('');
+    return `
+      <article class="order-card">
+        <div><div class="order-card-heading"><strong>${escapeHtml(order.reference)}</strong><time datetime="${escapeHtml(order.createdAt)}">${escapeHtml(date)}</time></div><p class="order-card-meta">${order.quantity} ${order.quantity === 1 ? 'item' : 'items'} · Demo order</p></div>
+        <div><p class="order-card-total">${formatMoney(order.totalCents)}</p><select class="order-status" data-order-id="${escapeHtml(order.reference)}" aria-label="Status for ${escapeHtml(order.reference)}">${options}</select></div>
+        <details class="order-details"><summary>View items</summary>${items}</details>
+      </article>`;
+  }).join('');
 }
 
 // The dashboard summarizes the full catalog, regardless of table search or page.
@@ -570,22 +601,46 @@ $('#place-order').addEventListener('click', () => {
   // If stock changed, let the shopper review the adjusted bag before ordering.
   if (renderCart()) return;
   if (!state.cart.length) return;
-  const order = { quantity: 0, totalCents: 0 };
+  const order = {
+    reference: `DEMO-${String(state.orders.length + 1).padStart(4, '0')}`,
+    createdAt: new Date().toISOString(),
+    status: 'new',
+    items: [],
+    quantity: 0,
+    totalCents: 0,
+  };
   for (const item of state.cart) {
     const product = state.products.find((entry) => String(entry.id) === item.id);
+    const priceCents = Math.round((Number(product.price) || 0) * 100);
+    order.items.push({ title: product.title, quantity: item.quantity, priceCents });
     order.quantity += item.quantity;
-    order.totalCents += Math.round((Number(product.price) || 0) * 100) * item.quantity;
+    order.totalCents += priceCents * item.quantity;
     product.stock = stockAvailable(product) - item.quantity;
   }
+  state.orders.push(order);
   state.cart = [];
   state.cartNotice = '';
   state.lastOrder = order;
   render();
+  renderOrders();
 });
 $('#inventory-link').addEventListener('click', () => {
   const inventory = $('#inventory-section');
   inventory.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
   inventory.focus({ preventScroll: true });
+});
+$('#orders-link').addEventListener('click', () => {
+  const orders = $('#orders-section');
+  orders.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
+  orders.focus({ preventScroll: true });
+});
+$('#orders-list').addEventListener('change', (event) => {
+  const select = event.target.closest('select[data-order-id]');
+  if (!select || !['new', 'processing', 'completed'].includes(select.value)) return;
+  const order = state.orders.find((entry) => entry.reference === select.dataset.orderId);
+  if (!order) return;
+  order.status = select.value;
+  showToast('Demo order status updated.');
 });
 $('#add-button').addEventListener('click', () => openForm());
 $('#close-detail').addEventListener('click', () => detailDialog.close());
