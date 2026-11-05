@@ -96,6 +96,7 @@ async function loadProducts() {
     $('#featured-products').innerHTML = '<p class="rail-message">Products are temporarily unavailable.</p>';
     $('#showcase-stage').innerHTML = '<p class="showcase-message">Products are temporarily unavailable.</p>';
     $('#showcase-caption').textContent = 'Catalog unavailable';
+    $('#category-breakdown').textContent = 'Categories are unavailable.';
     $('#store-count').textContent = 'Catalog unavailable';
     $('#store-page-info').textContent = 'Catalog unavailable';
     $('#page-info').textContent = 'Catalog unavailable';
@@ -106,6 +107,7 @@ async function loadProducts() {
 
 // Filter the local catalog, select a page, and redraw the table.
 function render(highlightId = null) {
+  renderAdminSummary();
   const query = state.query.trim().toLowerCase();
   const filtered = state.products.filter((product) =>
     [product.title, product.category, product.brand].some((value) =>
@@ -170,6 +172,42 @@ function render(highlightId = null) {
   $('#next').disabled = state.page >= pages;
   renderStore();
   renderShowcase();
+}
+
+// The dashboard summarizes the full catalog, regardless of table search or page.
+function renderAdminSummary() {
+  const products = state.products;
+  const totalUnits = products.reduce((total, product) => total + (Number(product.stock) || 0), 0);
+  const lowStock = products.filter((product) => (Number(product.stock) || 0) < 10).length;
+  const retailValue = products.reduce((total, product) =>
+    total + (Number(product.price) || 0) * (Number(product.stock) || 0), 0
+  );
+  $('#metric-products').textContent = new Intl.NumberFormat('en-US').format(products.length);
+  $('#metric-units').textContent = new Intl.NumberFormat('en-US').format(totalUnits);
+  $('#metric-low').textContent = new Intl.NumberFormat('en-US').format(lowStock);
+  $('#metric-value').textContent = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(retailValue);
+
+  const counts = new Map();
+  for (const product of products) {
+    const category = product.category || 'Uncategorized';
+    counts.set(category, (counts.get(category) || 0) + 1);
+  }
+  const categories = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 5);
+  const breakdown = $('#category-breakdown');
+  if (!categories.length) {
+    breakdown.textContent = 'No products to summarize yet.';
+    return;
+  }
+  const maxCount = categories[0][1];
+  breakdown.innerHTML = categories.map(([category, count]) => `
+    <div class="category-row">
+      <span class="category-name">${escapeHtml(category.replace(/-/g, ' '))}</span>
+      <span class="category-bar" aria-hidden="true"><span class="category-fill" style="width: ${count / maxCount * 100}%"></span></span>
+      <span class="category-count" aria-label="${count} ${count === 1 ? 'product' : 'products'}">${count}</span>
+    </div>`).join('');
 }
 
 // The carousel uses real catalog products, with clothing first for the editorial layout.
@@ -433,6 +471,11 @@ function handleStoreProductClick(event) {
 $('#store-products').addEventListener('click', handleStoreProductClick);
 $('#featured-products').addEventListener('click', handleStoreProductClick);
 $('#showcase-stage').addEventListener('click', handleStoreProductClick);
+$('#inventory-link').addEventListener('click', () => {
+  const inventory = $('#inventory-section');
+  inventory.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
+  inventory.focus({ preventScroll: true });
+});
 $('#add-button').addEventListener('click', () => openForm());
 $('#close-detail').addEventListener('click', () => detailDialog.close());
 $('#dismiss-detail').addEventListener('click', () => detailDialog.close());
