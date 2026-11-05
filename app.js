@@ -89,6 +89,7 @@ async function loadProducts() {
     $('#store-status').classList.remove('is-loading');
     status.textContent = 'Could not load products. Check your connection and refresh the page.';
     $('#store-status').textContent = 'Could not load products. Check your connection and refresh the page.';
+    $('#featured-products').innerHTML = '<p class="rail-message">Products are temporarily unavailable.</p>';
     $('#store-count').textContent = 'Catalog unavailable';
     $('#store-page-info').textContent = 'Catalog unavailable';
     $('#page-info').textContent = 'Catalog unavailable';
@@ -166,6 +167,19 @@ function render(highlightId = null) {
 
 // Both views use the same in-memory products, but have separate filters and pages.
 function renderStore() {
+  // Prefer clothing for the editorial rail, while keeping it tied to real catalog data.
+  const clothingCategories = ['tops', 'womens-dresses', 'mens-shirts', 'womens-shoes', 'mens-shoes'];
+  const featured = [...state.products].sort((a, b) =>
+    Number(clothingCategories.includes(b.category)) - Number(clothingCategories.includes(a.category))
+  ).slice(0, 2);
+  $('#featured-products').innerHTML = featured.length ? featured.map((product) => {
+    const image = product.thumbnail && /^https?:\/\//i.test(product.thumbnail)
+      ? `<img src="${escapeHtml(product.thumbnail)}" alt="" loading="lazy">`
+      : '<span aria-hidden="true">◇</span>';
+    const price = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(product.price) || 0);
+    return `<button type="button" class="rail-product" data-store-id="${escapeHtml(product.id)}" aria-label="View details for ${escapeHtml(product.title)}"><span class="rail-image">${image}</span><span class="rail-info"><span>${escapeHtml(product.title)}<span class="rail-price">${price}</span></span><span class="rail-arrow" aria-hidden="true">+</span></span></button>`;
+  }).join('') : '<p class="rail-message">No products available yet.</p>';
+
   const categorySelect = $('#store-category');
   const categories = [...new Set(state.products.map((product) => product.category).filter(Boolean))].sort();
   if (state.storeCategory && !categories.includes(state.storeCategory)) {
@@ -191,17 +205,16 @@ function renderStore() {
   $('#store-count').textContent = `${filtered.length} ${filtered.length === 1 ? 'product' : 'products'} to explore`;
   $('#store-products').innerHTML = visible.map((product) => {
     const image = product.thumbnail && /^https?:\/\//i.test(product.thumbnail)
-      ? `<img src="${escapeHtml(product.thumbnail)}" alt="" loading="lazy" class="h-full w-full object-contain motion-safe:transition motion-safe:duration-300 motion-safe:group-hover:scale-105">`
-      : '<span aria-hidden="true" class="text-5xl text-emerald-700">◇</span>';
+      ? `<img src="${escapeHtml(product.thumbnail)}" alt="" loading="lazy" class="motion-safe:transition motion-safe:duration-300 motion-safe:group-hover:scale-105">`
+      : '<span aria-hidden="true" class="text-5xl text-stone-400">◇</span>';
     const price = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(product.price) || 0);
     return `
-      <article class="store-card group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div class="grid h-52 place-items-center overflow-hidden bg-[#f1f5f1] p-5">${image}</div>
-        <div class="p-5">
-          <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">${escapeHtml((product.category || 'Uncategorized').replace(/-/g, ' '))}</p>
-          <h3 class="mt-2 text-base font-bold text-slate-900">${escapeHtml(product.title)}</h3>
-          <p class="mt-1 text-sm text-slate-400">${escapeHtml(product.brand || 'Stockroom collection')}</p>
-          <div class="mt-5 flex items-center justify-between gap-2"><span class="font-bold text-slate-900">${price}</span><button type="button" data-store-id="${escapeHtml(product.id)}" aria-label="View details for ${escapeHtml(product.title)}" class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700">View details</button></div>
+      <article class="store-card group">
+        <div class="editorial-card-image grid place-items-center overflow-hidden p-5">${image}</div>
+        <div class="pt-4">
+          <p class="text-[10px] uppercase tracking-[.15em] text-stone-400">${escapeHtml((product.category || 'Uncategorized').replace(/-/g, ' '))}</p>
+          <h3 class="mt-2 text-sm font-semibold text-stone-800">${escapeHtml(product.title)}</h3>
+          <div class="mt-3 flex items-center justify-between gap-2"><span class="text-xs text-stone-500">${price}</span><button type="button" data-store-id="${escapeHtml(product.id)}" aria-label="View details for ${escapeHtml(product.title)}" class="border-b border-stone-400 pb-1 text-[10px] uppercase tracking-wider text-stone-700 hover:text-black">View details</button></div>
         </div>
       </article>`;
   }).join('');
@@ -222,10 +235,6 @@ function showCurrentView() {
   $('#store-view').classList.toggle('hidden', isAdmin);
   for (const [selector, active] of [['#nav-store', !isAdmin], ['#nav-admin', isAdmin]]) {
     const link = $(selector);
-    link.classList.toggle('bg-white', active);
-    link.classList.toggle('text-slate-900', active);
-    link.classList.toggle('shadow-sm', active);
-    link.classList.toggle('text-slate-500', !active);
     if (active) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   }
@@ -305,12 +314,14 @@ $('#store-next').addEventListener('click', () => {
   state.storePage++;
   renderStore();
 });
-$('#store-products').addEventListener('click', (event) => {
+function handleStoreProductClick(event) {
   const button = event.target.closest('button[data-store-id]');
   if (!button) return;
   const product = state.products.find((item) => String(item.id) === button.dataset.storeId);
   if (product) openDetails(product, false);
-});
+}
+$('#store-products').addEventListener('click', handleStoreProductClick);
+$('#featured-products').addEventListener('click', handleStoreProductClick);
 $('#add-button').addEventListener('click', () => openForm());
 $('#close-detail').addEventListener('click', () => detailDialog.close());
 $('#dismiss-detail').addEventListener('click', () => detailDialog.close());
