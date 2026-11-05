@@ -1,0 +1,64 @@
+/* Admin workspace layout. The hidden view must stay hidden during navigation. */
+.admin-dashboard:not(.hidden) { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: calc(100vh - 60px); background: #f5f7f6; }
+.admin-sidebar { display: flex; flex-direction: column; gap: 0; padding: 28px 16px; border-right: 1px solid #e5ebe7; background: #fff; }
+.admin-workspace { display: flex; align-items: center; gap: 11px; padding: 0 7px 30px; }
+.admin-workspace-icon { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 12px; background: #e3f3e8; color: #267043; font-family: Manrope, sans-serif; font-size: 18px; font-weight: 800; }
+.admin-workspace strong, .admin-workspace small { display: block; }
+.admin-workspace strong { color: #192b21; font-size: 14px; }
+.admin-workspace small { margin-top: 3px; color: #929f97; font-size: 11px; }
+.admin-nav-label { padding: 0 10px; color: #a3aea7; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.admin-sidebar-nav { display: grid; gap: 5px; margin-top: 12px; }
+.admin-sidebar-nav a, .admin-sidebar-nav button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px; border-radius: 9px; color: #78877d; font-size: 13px; font-weight: 600; text-align: left; }
+.admin-sidebar-nav a span, .admin-sidebar-nav button span { width: 17px; color: #96a39b; font-size: 17px; text-align: center; }
+.admin-sidebar-nav .admin-nav-current { background: #eaf5ed; color: #276e42; }
+.admin-sidebar-nav .admin-nav-current span { color: #41875a; }
+.admin-sidebar-nav a:hover, .admin-sidebar-nav button:hover { background: #f1f7f3; color: #276e42; }
+.admin-sidebar-note { display: flex; gap: 9px; margin-top: auto; padding: 15px 10px 0; border-top: 1px solid #eef1ef; }
+.admin-sidebar-note strong { display: block; color: #57665c; font-size: 11px; }
+.admin-sidebar-note p { margin-top: 4px; color: #96a39a; font-size: 11px; line-height: 1.5; }
+.admin-status-dot { display: inline-block; flex: none; width: 7px; height: 7px; margin-top: 4px; border-radius: 50%; background: #4aa76a; }
+.admin-content { width: 100%; max-width: 1500px; min-width: 0; margin: 0 auto; padding: 24px clamp(20px, 3vw, 46px) 48px; }
+.admin-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 23px; border-bottom: 1px solid #e4eae6; color: #8a9990; font-size: 12px; }
+.admin-topline > span:first-child span { padding: 0 8px; color: #c7d1ca; }
+.admin-demo-badge { display: flex; align-items: center; gap: 7px; padding: 6px 10px; border: 1px solid #dbeae0; border-radius: 20px; background: #fff; color: #63816c; font-size: 11px; font-weight: 700; }
+.admin-demo-badge .admin-status-dot { margin: 0; }
+.admin-heading { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 18px; margin-top: 34px; }
+.admin-kicker { color: #7b9a85; font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+.admin-heading h1 { margin-top: 7px; color: #1e2e24; font-size: clamp(25px, 2.5vw, 32px); font-weight: 800; letter-spacing: -.04em; }
+.admin-heading h1 + p { margin-top: 6px; color: #89988e; font-size: 13px; }
+.admin-notice { display: flex; gap: 10px; align-items: start; margin-top: 24px; padding: 12px 15px; border: 1px solid #e9e1c7; border-radius: 10px; background: #fffbef; color: #806d3b; font-size: 12px; line-height: 1.5; }
+.admin-notice > span { font-size: 15px; }
+.admin-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
+.metric-card { min-width: 0; padding: 20px; border: 1px solid #e8eeea; border-radius: 14px; background: #fff; box-shadow: 0 4px 18px rgba(40, 70, 48, .035); }
+.metric-head { display: flex; align-items: start; justify-content: space-between; gap: 8px; color: #819087; font-size: 12px; font-weight: 600; }
+.metric-icon { display: grid; flex: none; width: 34px; height: 34px; place-items: center; border-radius: 10px; background: #eaf5ed; color: #54976b; font-size: 16px; font-weight: 700; }
+.metric-icon-blue { background: #eaf2fa; color: #698eb3; }.metric-icon-amber { background: #fff4dd; color: #c99636; }.metric-icon-violet { background: #f0eefa; color: #8d7fbc; }
+.metric-card strong { display: block; margin-top: 10px; color: #203228; font-family: Manrope, sans-serif; font-size: clamp(22px, 2vw, 28px); font-weight: 800; overflow-wrap: anywhere; }
+.metric-card p { margin-top: 6px; color: #a0aca4; font-size: 11px; }
+.admin-insights { display: grid; grid-template-columns: minmax(200px, .9fr) 2fr; gap: 30px; margin-top: 20px; padding: 24px; border: 1px solid #e8eeea; border-radius: 14px; background: #fff; }
+.admin-insights h2 { margin-top: 8px; color: #26372c; font-size: 17px; font-weight: 800; }
+.admin-insights h2 + p { margin-top: 6px; color: #96a39b; font-size: 12px; line-height: 1.6; }
+.category-breakdown { display: grid; gap: 12px; align-content: center; color: #8b9a90; font-size: 12px; }
+.category-row { display: grid; grid-template-columns: minmax(100px, 160px) minmax(50px, 1fr) 34px; align-items: center; gap: 12px; color: #728178; font-size: 11px; }
+.category-name { overflow: hidden; text-overflow: ellipsis; text-transform: capitalize; white-space: nowrap; }
+.category-bar { height: 6px; overflow: hidden; border-radius: 10px; background: #edf3ef; }
+.category-fill { display: block; height: 100%; border-radius: inherit; background: #80b993; }
+.category-count { color: #4d6254; font-weight: 700; text-align: right; }
+.admin-table { margin-top: 20px; scroll-margin-top: 20px; }
+.admin-table:focus { outline: none; }
+.admin-footer { margin-top: 24px; color: #a0aca4; font-size: 11px; }
+.admin-footer a { color: #648a70; font-weight: 700; }
+@media (max-width: 1050px) { .admin-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) {
+  .admin-dashboard:not(.hidden) { display: block; }
+  .admin-sidebar { padding: 16px; border-right: 0; border-bottom: 1px solid #e5ebe7; }
+  .admin-workspace { padding: 0; }
+  .admin-nav-label, .admin-sidebar-note { display: none; }
+  .admin-sidebar-nav { display: flex; gap: 4px; overflow-x: auto; margin-top: 14px; }
+  .admin-sidebar-nav a, .admin-sidebar-nav button { width: auto; flex: none; padding: 9px 10px; font-size: 12px; }
+  .admin-content { padding: 20px 16px 40px; }
+  .admin-heading { margin-top: 25px; }
+  .admin-metrics { gap: 10px; }
+  .metric-card { padding: 15px; }
+  .admin-insights { grid-template-columns: 1fr; gap: 20px; padding: 20px; }
+}

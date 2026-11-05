@@ -45,6 +45,7 @@
     .is-loading::before { content: ''; display: inline-block; width: 16px; height: 16px; margin-right: 10px; vertical-align: -3px; border: 2px solid #d1fae5; border-top-color: #047857; border-radius: 50%; }
   </style>
   <link rel="stylesheet" href="storefront.css">
+  <link rel="stylesheet" href="admin.css">
   <script src="app.js" defer></script>
 </head>
 <body class="bg-[#f7f8f7] text-slate-800 antialiased">
@@ -81,13 +82,33 @@
     </section>
     <p class="pb-10 text-center text-xs text-stone-400">Demo catalog powered by <a class="underline" href="https://dummyjson.com/docs/products" target="_blank" rel="noopener noreferrer">DummyJSON</a>.</p>
   </main>
-  <main id="admin-view" tabindex="-1" class="hidden mx-auto max-w-7xl px-5 pb-16 pt-10 sm:px-8 sm:pt-14">
-    <div class="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
-      <div><p class="mb-3 text-xs font-bold uppercase tracking-[.2em] text-emerald-700">Your inventory</p><h1 class="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Products</h1><p class="mt-2 text-sm text-slate-500 sm:text-base">A simple place to manage your product catalog.</p></div>
+  <main id="admin-view" tabindex="-1" class="hidden admin-dashboard">
+    <aside class="admin-sidebar" aria-label="Admin workspace">
+      <div class="admin-workspace"><span class="admin-workspace-icon" aria-hidden="true">S</span><span><strong>Stockroom</strong><small>Admin workspace</small></span></div>
+      <p class="admin-nav-label">Workspace</p>
+      <nav class="admin-sidebar-nav" aria-label="Admin navigation">
+        <a class="admin-nav-current" href="#admin" aria-current="page"><span aria-hidden="true">&#9638;</span> Overview</a>
+        <button id="inventory-link" type="button"><span aria-hidden="true">&#9636;</span> Products</button>
+        <a href="#collection"><span aria-hidden="true">&#9635;</span> Collection</a>
+        <a href="#store"><span aria-hidden="true">&#8599;</span> View storefront</a>
+      </nav>
+      <div class="admin-sidebar-note"><span class="admin-status-dot"></span><div><strong>Demo workspace</strong><p>Changes last for this tab only.</p></div></div>
+    </aside>
+    <div class="admin-content">
+    <div class="admin-topline"><span>Workspace <span aria-hidden="true">/</span> Overview</span><span class="admin-demo-badge"><span class="admin-status-dot"></span> Demo mode</span></div>
+    <div class="admin-heading">
+      <div><p class="admin-kicker">YOUR WORKSPACE</p><h1>Inventory overview</h1><p>Manage your products and keep an eye on your catalog.</p></div>
       <button id="add-button" type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-200"><span class="text-xl leading-none">+</span> Add product</button>
     </div>
-    <div class="mt-8 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><span aria-hidden="true">ⓘ</span><p><strong>Demo admin.</strong> No sign-in is required. DummyJSON simulates changes, which stay visible in this tab until you refresh.</p></div>
-    <section aria-label="Product catalog" class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="admin-notice"><span aria-hidden="true">&#9432;</span><p><strong>Demo workspace.</strong> No sign-in is required. DummyJSON simulates changes; they remain visible in this tab until refresh.</p></div>
+    <section class="admin-metrics" aria-label="Inventory summary">
+      <article class="metric-card"><div class="metric-head"><span>Total products</span><span class="metric-icon" aria-hidden="true">&#9638;</span></div><strong id="metric-products">&mdash;</strong><p>Products in your catalog</p></article>
+      <article class="metric-card"><div class="metric-head"><span>Units in stock</span><span class="metric-icon metric-icon-blue" aria-hidden="true">&#9636;</span></div><strong id="metric-units">&mdash;</strong><p>Across all products</p></article>
+      <article class="metric-card"><div class="metric-head"><span>Low or out of stock</span><span class="metric-icon metric-icon-amber" aria-hidden="true">!</span></div><strong id="metric-low">&mdash;</strong><p>Products with fewer than 10 units</p></article>
+      <article class="metric-card"><div class="metric-head"><span>Stock retail value</span><span class="metric-icon metric-icon-violet" aria-hidden="true">$</span></div><strong id="metric-value">&mdash;</strong><p>Price &times; units in stock</p></article>
+    </section>
+    <section class="admin-insights" aria-labelledby="category-title"><div><p class="admin-kicker">CATALOG BREAKDOWN</p><h2 id="category-title">Products by category</h2><p>Your top five categories by product count.</p></div><div id="category-breakdown" class="category-breakdown">Loading categories...</div></section>
+    <section id="inventory-section" tabindex="-1" aria-label="Product catalog" class="admin-table overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div class="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div><h2 class="text-lg font-bold text-slate-900">All products <span id="count" class="ml-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">—</span></h2><p class="mt-1 text-sm text-slate-500">Browse and manage your inventory.</p></div>
         <label class="relative block sm:w-72"><span class="sr-only">Search products</span><svg class="pointer-events-none absolute left-3.5 top-3.5 text-slate-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg><input id="search" type="search" placeholder="Search products..." class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"></label>
@@ -96,7 +117,8 @@
       <div id="status" role="status" class="is-loading px-5 py-12 text-center text-sm text-slate-500">Loading products...</div>
       <div class="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 px-5 py-4 text-sm text-slate-500"><span id="page-info">Loading catalog...</span><div class="flex gap-2"><button id="previous" type="button" class="rounded-lg border border-slate-200 px-3 py-2 font-semibold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">Previous</button><button id="next" type="button" class="rounded-lg border border-slate-200 px-3 py-2 font-semibold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">Next</button></div></div>
     </section>
-    <p class="mt-6 text-center text-xs text-slate-400">Made for the little details. Powered by <a class="font-semibold text-emerald-700 hover:underline" href="https://dummyjson.com/docs/products" target="_blank" rel="noopener noreferrer">DummyJSON</a>.</p>
+    <p class="admin-footer">Stockroom &middot; Demo catalog powered by <a href="https://dummyjson.com/docs/products" target="_blank" rel="noopener noreferrer">DummyJSON</a></p>
+    </div>
   </main>
   <dialog id="detail-dialog" aria-labelledby="detail-title" aria-describedby="detail-description" class="detail-dialog">
     <button type="button" id="close-detail" aria-label="Close product details" class="detail-close">&times;</button>
