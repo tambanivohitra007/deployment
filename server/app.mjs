@@ -9,7 +9,7 @@ import { HttpError, validateProduct, validateCheckout } from './validation.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const statuses = new Set(['new', 'processing', 'completed']);
-const publicFiles = new Set(['index.html', 'app.js', 'admin.css', 'storefront.css', 'effects.css']);
+const publicFiles = new Set(['index.html', 'admin.css', 'storefront.css']);
 
 async function readJson(req) {
   if (!req.headers['content-type']?.startsWith('application/json')) throw new HttpError(415, 'Send JSON data.');
@@ -195,7 +195,7 @@ export function createApplication(config = {}) {
       if (!['GET', 'HEAD'].includes(method)) throw new HttpError(405, 'Method not allowed.');
       const file = path === '/' ? 'index.html' : path.slice(1);
       // Never expose database files, server code, environment files, or repository metadata.
-      if (!publicFiles.has(file) && !/^assets\/[a-zA-Z0-9_.-]+\.(png|jpg|jpeg|webp|svg|css)$/.test(file) && !/^client\/[a-zA-Z0-9_-]+\.js$/.test(file)) throw new HttpError(404, 'Not found.');
+      if (!publicFiles.has(file) && !/^assets\/[a-zA-Z0-9_.-]+\.(png|jpg|jpeg|webp|svg|css)$/.test(file) && !/^js\/[a-zA-Z0-9_-]+\.js$/.test(file)) throw new HttpError(404, 'Not found.');
       let content;
       try { content = await readFile(resolve(root, file)); }
       catch { throw new HttpError(404, 'Not found.'); }
