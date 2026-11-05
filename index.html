@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -44,29 +44,36 @@
     }
     .is-loading::before { content: ''; display: inline-block; width: 16px; height: 16px; margin-right: 10px; vertical-align: -3px; border: 2px solid #d1fae5; border-top-color: #047857; border-radius: 50%; }
   </style>
+  <link rel="stylesheet" href="storefront.css">
   <script src="app.js" defer></script>
 </head>
 <body class="bg-[#f7f8f7] text-slate-800 antialiased">
-  <header class="border-b border-slate-200 bg-white">
-    <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
-      <a href="#store" class="brand flex items-center gap-2.5 text-lg font-extrabold tracking-tight text-slate-900"><span class="grid h-9 w-9 place-items-center rounded-xl bg-emerald-700 text-white"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span>stockroom<span class="text-emerald-700">.</span></a>
-      <nav aria-label="Main navigation" class="flex items-center gap-1 rounded-xl bg-slate-100 p-1 text-sm font-semibold"><a id="nav-store" href="#store" class="rounded-lg px-3 py-2 text-slate-500 sm:px-4">Storefront</a><a id="nav-admin" href="#admin" class="rounded-lg px-3 py-2 text-slate-500 sm:px-4">Admin</a></nav>
+  <header class="storefront-header">
+    <div class="storefront-header-inner">
+      <nav aria-label="Shop navigation"><a id="nav-store" href="#store">Storefront</a><a href="#collection" class="hidden sm:inline">Collection</a></nav>
+      <a href="#store" class="store-brand" aria-label="Stockroom storefront">STOCKROOM</a>
+      <nav aria-label="Administration"><a id="nav-admin" href="#admin">Admin</a></nav>
     </div>
   </header>
-  <main id="store-view" class="mx-auto max-w-7xl px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
-    <section class="overflow-hidden rounded-3xl bg-[#e8f1e9] px-7 py-12 sm:px-12 sm:py-16">
-      <p class="text-xs font-bold uppercase tracking-[.2em] text-emerald-700">The Stockroom collection</p>
-      <h1 class="mt-4 max-w-2xl text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl">Good finds for<br>everyday living<span class="text-emerald-700">.</span></h1>
-      <p class="mt-4 max-w-lg text-base leading-7 text-slate-600">Discover a little something for every part of your day. Explore our collection and find your next favorite.</p>
-      <a href="#collection" class="mt-7 inline-flex rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-800">Explore products <span aria-hidden="true" class="ml-3">↓</span></a>
+  <main id="store-view" class="editorial-store">
+    <section class="editorial-hero" aria-label="The everyday edit">
+      <aside class="featured-rail" aria-label="Featured products">
+        <div class="rail-heading"><span>Featured pieces</span><span>01 / 02</span></div>
+        <div id="featured-products"><p class="rail-message">Discovering the collection...</p></div>
+      </aside>
+      <div class="campaign">
+        <img class="campaign-image" src="assets/editorial-hero.png" alt="Fashion models in neutral clothing in a softly lit studio">
+        <div class="campaign-copy"><span class="campaign-kicker">The Stockroom edit</span><h1>Objects of<br>everyday life</h1><p>A considered collection of pieces for the moments that make up your day.</p></div>
+        <div class="campaign-bottom"><p>The everyday edit</p><a href="#collection">Explore the collection &rarr;</a></div>
+      </div>
     </section>
-    <section id="collection" aria-labelledby="collection-title" class="mt-12 scroll-mt-6">
-      <div class="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p class="text-xs font-bold uppercase tracking-[.18em] text-emerald-700">Discover something new</p><h2 id="collection-title" class="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Explore the collection</h2><p id="store-count" class="mt-2 text-sm text-slate-500">Loading products...</p></div><div class="flex flex-col gap-2 sm:flex-row"><label><span class="sr-only">Search storefront products</span><input id="store-search" type="search" placeholder="Search products..." class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 sm:w-56"></label><label><span class="sr-only">Filter by category</span><select id="store-category" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"><option value="">All categories</option></select></label></div></div>
-      <div id="store-status" role="status" class="is-loading py-16 text-center text-sm text-slate-500">Loading products...</div>
-      <div id="store-products" class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"></div>
-      <div class="mt-8 flex items-center justify-between gap-4 border-t border-slate-200 pt-5 text-sm text-slate-500"><span id="store-page-info">Loading catalog...</span><div class="flex gap-2"><button id="store-previous" type="button" class="rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">Previous</button><button id="store-next" type="button" class="rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">Next</button></div></div>
+    <section id="collection" aria-labelledby="collection-title" class="collection-section">
+      <div class="collection-heading"><div><p class="collection-kicker">Selected for you</p><h2 id="collection-title">The collection</h2><p id="store-count" class="mt-2 text-xs text-stone-500">Loading products...</p></div><div class="collection-controls"><label><span class="sr-only">Search storefront products</span><input id="store-search" type="search" placeholder="Search the collection"></label><label><span class="sr-only">Filter by category</span><select id="store-category"><option value="">All categories</option></select></label></div></div>
+      <div id="store-status" role="status" class="is-loading py-16 text-center text-sm text-stone-500">Loading products...</div>
+      <div id="store-products" class="mt-8 grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-4"></div>
+      <div class="mt-10 flex items-center justify-between gap-4 border-t border-stone-300 pt-5 text-xs text-stone-500"><span id="store-page-info">Loading catalog...</span><div class="flex gap-2"><button id="store-previous" type="button" class="border border-stone-300 px-4 py-2 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40">Previous</button><button id="store-next" type="button" class="border border-stone-300 px-4 py-2 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40">Next</button></div></div>
     </section>
-    <p class="mt-12 text-center text-xs text-slate-400">Demo catalog powered by <a class="font-semibold text-emerald-700 hover:underline" href="https://dummyjson.com/docs/products" target="_blank" rel="noopener noreferrer">DummyJSON</a>.</p>
+    <p class="pb-10 text-center text-xs text-stone-400">Demo catalog powered by <a class="underline" href="https://dummyjson.com/docs/products" target="_blank" rel="noopener noreferrer">DummyJSON</a>.</p>
   </main>
   <main id="admin-view" class="hidden mx-auto max-w-7xl px-5 pb-16 pt-10 sm:px-8 sm:pt-14">
     <div class="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">

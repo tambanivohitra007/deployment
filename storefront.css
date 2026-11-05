@@ -1,0 +1,61 @@
+/* Storefront: a restrained editorial layout inspired by a fashion campaign. */
+.storefront-header { background: #f9f8f5; border-bottom: 1px solid #e6e4df; }
+.storefront-header-inner { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 60px; padding: 0 32px; }
+.storefront-header nav { display: flex; align-items: center; gap: 28px; }
+.storefront-header nav:last-child { justify-content: flex-end; }
+.storefront-header a { color: #514f4a; font-size: 10px; letter-spacing: .13em; text-transform: uppercase; }
+.storefront-header a:hover, .storefront-header a[aria-current="page"] { color: #171714; }
+.storefront-header .store-brand { font-family: Manrope, sans-serif; font-size: 15px; font-weight: 800; letter-spacing: .21em; color: #171714; }
+.editorial-store { background: #f8f7f3; color: #23221f; }
+.editorial-hero { display: grid; grid-template-columns: 230px minmax(0, 1fr); min-height: min(720px, calc(100vh - 60px)); }
+.featured-rail { background: #f8f7f3; border-right: 1px solid #e4e2dd; }
+.rail-heading { display: flex; justify-content: space-between; padding: 19px 18px 14px; color: #827f77; font-size: 9px; letter-spacing: .15em; text-transform: uppercase; }
+.rail-product { display: block; width: 100%; border-top: 1px solid #e4e2dd; text-align: left; }
+.rail-image { height: 205px; display: grid; place-items: center; padding: 16px; background: #f2f0eb; }
+.rail-image img { width: 100%; height: 100%; object-fit: contain; }
+.rail-info { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 15px 17px 17px; font-size: 9px; letter-spacing: .09em; text-transform: uppercase; }
+.rail-price { display: block; margin-top: 6px; color: #89867e; }
+.rail-arrow { font-size: 19px; font-weight: 300; line-height: 1; }
+.rail-message { padding: 20px 18px; color: #817e77; font-size: 11px; line-height: 1.6; }
+.campaign { position: relative; min-height: 600px; overflow: hidden; background: #e6e2d9; }
+.campaign-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.campaign::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(246,244,239,.16), transparent 42%, rgba(30,29,25,.24)); }
+.campaign-copy { position: absolute; z-index: 1; top: 9%; right: 5%; width: min(320px, 37%); text-align: right; color: #33312d; }
+.campaign-kicker, .campaign-label { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; }
+.campaign-copy h1 { margin-top: 15px; font-size: clamp(16px, 1.8vw, 25px); font-weight: 400; letter-spacing: .16em; line-height: 1.35; text-transform: uppercase; }
+.campaign-copy p { margin-top: 15px; font-size: 11px; line-height: 1.7; }
+.campaign-bottom { position: absolute; z-index: 1; right: 5%; bottom: 8%; color: #fff; text-align: right; }
+.campaign-bottom p { font-family: Georgia, serif; font-size: 22px; font-style: italic; }
+.campaign-bottom a { display: inline-block; margin-top: 13px; border-bottom: 1px solid currentColor; padding-bottom: 6px; font-size: 10px; letter-spacing: .15em; text-transform: uppercase; }
+.collection-section { max-width: 1440px; margin: 0 auto; padding: 84px 32px 64px; scroll-margin-top: 24px; }
+.collection-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; }
+.collection-kicker { color: #88847b; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; }
+.collection-heading h2 { margin-top: 10px; font-family: Georgia, serif; font-size: clamp(30px, 3vw, 44px); font-weight: 400; }
+.collection-controls { display: flex; gap: 18px; }
+.collection-controls input, .collection-controls select { min-width: 150px; border: 0; border-bottom: 1px solid #aaa69c; background: transparent; padding: 11px 0; font-size: 12px; outline: none; }
+.collection-controls input:focus, .collection-controls select:focus { border-color: #23221f; }
+.editorial-card-image { height: 300px; background: #f0eee9; }
+.editorial-card-image img { height: 100%; width: 100%; object-fit: contain; }
+.store-card h3 { font-family: 'DM Sans', sans-serif; }
+@media (max-width: 700px) {
+  .storefront-header-inner { min-height: 58px; padding: 0 16px; }
+  .storefront-header nav { gap: 12px; }
+  .storefront-header a { font-size: 9px; letter-spacing: .06em; }
+  .storefront-header .store-brand { font-size: 12px; letter-spacing: .13em; }
+  .editorial-hero { display: flex; flex-direction: column-reverse; min-height: 0; }
+  .campaign { min-height: 66vh; }
+  .campaign-image { object-position: 42% center; }
+  .campaign-copy { top: 6%; right: 6%; width: 48%; }
+  .campaign-copy h1 { font-size: 14px; }
+  .campaign-copy p { font-size: 10px; }
+  .featured-rail { border-right: 0; }
+  #featured-products { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rail-product + .rail-product { border-left: 1px solid #e4e2dd; }
+  .rail-image { height: 145px; }
+  .collection-section { padding: 56px 16px; }
+  .collection-heading { align-items: stretch; flex-direction: column; }
+  .collection-controls { gap: 14px; }
+  .collection-controls label { flex: 1; min-width: 0; }
+  .collection-controls input, .collection-controls select { width: 100%; min-width: 0; }
+  .editorial-card-image { height: 240px; }
+}
