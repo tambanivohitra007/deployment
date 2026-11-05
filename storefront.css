@@ -45,9 +45,12 @@
   @keyframes showcase-arrive { from { opacity: 0; transform: translateX(40px); } }
 }
 .collection-section { max-width: 1440px; margin: 0 auto; padding: 84px 32px 64px; scroll-margin-top: 24px; }
+.store-collection-link { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 38px 5%; border-top: 1px solid #e4e2dd; }
+.store-collection-link p + p { margin-top: 7px; font-family: Georgia, serif; font-size: 23px; }
+.store-collection-link a { flex-shrink: 0; padding-bottom: 5px; border-bottom: 1px solid currentColor; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
 .collection-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; }
 .collection-kicker { color: #88847b; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; }
-.collection-heading h2 { margin-top: 10px; font-family: Georgia, serif; font-size: clamp(30px, 3vw, 44px); font-weight: 400; }
+.collection-heading h1 { margin-top: 10px; font-family: Georgia, serif; font-size: clamp(30px, 3vw, 44px); font-weight: 400; }
 .collection-controls { display: flex; gap: 18px; }
 .collection-controls input, .collection-controls select { min-width: 150px; border: 0; border-bottom: 1px solid #aaa69c; background: transparent; padding: 11px 0; font-size: 12px; outline: none; }
 .collection-controls input:focus, .collection-controls select:focus { border-color: #23221f; }
@@ -112,6 +115,8 @@
   .showcase-caption p { font-size: 19px; }
   .showcase-actions { gap: 4px; }
   .showcase-actions button { padding: 8px; }
+  .store-collection-link { padding: 30px 16px; }
+  .store-collection-link p + p { font-size: 18px; }
   .featured-rail { border-right: 0; }
   #featured-products { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rail-product + .rail-product { border-left: 1px solid #e4e2dd; }
