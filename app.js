@@ -282,16 +282,24 @@ function renderStore() {
   $('#store-next').disabled = state.storePage >= pages;
 }
 
-// Hash navigation keeps both views in the same tab and preserves demo changes.
+// Hash navigation keeps all three views in the same tab and preserves demo changes.
 function showCurrentView() {
-  const isAdmin = window.location.hash === '#admin';
-  $('#admin-view').classList.toggle('hidden', !isAdmin);
-  $('#store-view').classList.toggle('hidden', isAdmin);
-  for (const [selector, active] of [['#nav-store', !isAdmin], ['#nav-admin', isAdmin]]) {
+  const hash = window.location.hash;
+  const view = hash === '#admin' ? 'admin' : hash === '#collection' ? 'collection' : 'store';
+  for (const name of ['store', 'collection', 'admin']) {
+    $(`#${name}-view`).classList.toggle('hidden', name !== view);
+  }
+  document.title = `${view === 'store' ? 'Storefront' : view === 'collection' ? 'Collection' : 'Admin'} | Stockroom`;
+  for (const [selector, active] of [
+    ['#nav-store', view === 'store'],
+    ['#nav-collection', view === 'collection'],
+    ['#nav-admin', view === 'admin'],
+  ]) {
     const link = $(selector);
     if (active) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   }
+  return view;
 }
 
 // Reuse the same form for creating a product and editing an existing one.
@@ -386,7 +394,11 @@ function openDetails(product, isAdmin = true) {
 }
 
 // Connect the page controls to their actions.
-window.addEventListener('hashchange', showCurrentView);
+window.addEventListener('hashchange', () => {
+  const view = showCurrentView();
+  window.scrollTo(0, 0);
+  $(`#${view}-view`).focus({ preventScroll: true });
+});
 $('#showcase-prev').addEventListener('click', () => advanceShowcase(-1));
 $('#showcase-next').addEventListener('click', () => advanceShowcase(1));
 $('#showcase-toggle').addEventListener('click', () => {
@@ -540,7 +552,7 @@ loadProducts();
 setInterval(() => {
   const showcase = $('#showcase');
   if (state.loading || state.showcasePaused || reducedMotion.matches || document.hidden ||
-      window.location.hash === '#admin' || dialog.open || detailDialog.open ||
+      ['#admin', '#collection'].includes(window.location.hash) || dialog.open || detailDialog.open ||
       showcase.matches(':hover') || showcase.contains(document.activeElement)) return;
   advanceShowcase(1);
 }, SHOWCASE_INTERVAL);
